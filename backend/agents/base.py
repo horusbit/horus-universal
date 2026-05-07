@@ -1,0 +1,67 @@
+"""
+Clase base para todos los agentes HORUS
+"""
+from abc import ABC, abstractmethod
+from typing import AsyncGenerator, List, Optional
+from models.schemas import Message, AgentType, ModelTier, AgentInfo
+from services.openrouter import chat_completion, chat_stream
+
+
+class BaseAgent(ABC):
+    agent_type: AgentType
+    name: str
+    description: str
+    icon: str
+    capabilities: List[str]
+    preferred_tier: ModelTier = ModelTier.FREE_BALANCED
+    system_prompt: str = ""
+
+    @classmethod
+    def get_info(cls) -> AgentInfo:
+        return AgentInfo(
+            id=cls.agent_type,
+            name=cls.name,
+            description=cls.description,
+            icon=cls.icon,
+            capabilities=cls.capabilities,
+            preferred_model=cls.preferred_tier.value,
+        )
+
+    @classmethod
+    def build_messages(cls, user_message: str, history: List[Message]) -> List[Message]:
+        """Construye la lista de mensajes con system prompt del agente."""
+        messages = [Message(role="system", content=cls.system_prompt)]
+        messages.extend(history[-10:])  # Últimos 10 mensajes del historial
+        messages.append(Message(role="user", content=user_message))
+        return messages
+
+    @classmethod
+    async def respond(
+        cls,
+        user_message: str,
+        history: List[Message] = None,
+        temperature: float = 0.7,
+    ) -> dict:
+        """Respuesta completa (no streaming)."""
+        messages = cls.build_messages(user_message, history or [])
+        return await chat_completion(
+            messages=messages,
+            tier=cls.preferred_tier,
+            temperature=temperature,
+        )
+
+    @classmethod
+    async def stream(
+        cls,
+        user_message: str,
+        history: List[Message] = None,
+        temperature: float = 0.7,
+    ) -> AsyncGenerator[str, None]:
+        """Respuesta en streaming."""
+        messages = cls.build_messages(user_message, history or [])
+        async for chunk in chat_stream(
+            messages=messages,
+            tier=cls.preferred_tier,
+            temperature=temperature,
+        ):
+            yield chunk

@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: horus-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt --prefer-binary
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    healthCheckPath: /health
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: MODEL_PRIMARY
+        value: google/gemma-3-4b-it:free
+      - key: MODEL_FAST
+        value: liquid/lfm-2.5-1.2b-instruct:free
+      - key: MODEL_BALANCED
+        value: google/gemma-3-4b-it:free
+      - key: MODEL_CRITICAL
+        value: google/gemma-3-27b-it:free
+      - key: MODEL_DEEP
+        value: meta-llama/llama-3.3-70b-instruct:free
+      - key: MODEL_FALLBACKS
+        value: liquid/lfm-2.5-1.2b-instruct:free,google/gemma-3-4b-it:free,poolside/laguna-xs.2:free
+      - key: CORS_ORIGINS
+        value: https://horus-universal.vercel.app,http://localhost:3000
+      - key: DEBUG
+        value: false
+      - key: APP_VERSION
+        value: 2.0.0

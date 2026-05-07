@@ -1,0 +1,206 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export type AgentType =
+  | "atlas" | "cipher" | "nova" | "lexis"
+  | "oracle" | "hermes" | "echo" | "darwin" | "pixel";
+
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+export interface ChatRequest {
+  message: string;
+  agent: AgentType;
+  conversation_id?: string;
+  history?: ChatMessage[];
+  stream?: boolean;
+}
+
+export interface ChatResponse {
+  content: string;
+  agent: AgentType;
+  model_used: string;
+  conversation_id: string;
+  tokens_used?: number;
+}
+
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  message_count: number;
+  last_message?: string;
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const { supabase } = await import("./supabase");
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) {
+      return { Authorization: `Bearer ${data.session.access_token}` };
+    }
+  } catch {}
+  return {};
+}
+
+export async function sendMessage(request: ChatRequest): Promise<ChatResponse> {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${API_URL}/api/v1/chat/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify({ ...request, stream: false }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || `Error ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function* streamMessage(
+  request: ChatRequest,
+  onChunk?: (chunk: string) => void
+): AsyncGenerator<string, void, undefined> {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${API_URL}/api/v1/chat/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify({ ...request, stream: true }),
+  });
+  if (!response.ok) throw new Error(`Error ${response.status}`);
+
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data: ")) continue;
+        const dataStr = trimmed.slice(6).trim();
+        if (!dataStr || dataStr === "[DONE]") continue;
+        try {
+          const data = JSON.parse(dataStr);
+          if (data.type === "chunk" && data.content) {
+            onChunk?.(data.content);
+            yield data.content;
+          } else if (data.type === "error") {
+            throw new Error(data.message || "Error en streaming");
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) continue;
+          throw e;
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+export async function getConversations(): Promise<ConversationSummary[]> {
+  try {
+    const r = await fetch(`${API_URL}/api/v1/conversations/`);
+    if (!r.ok) return [];
+    return r.json();
+  } catch { return []; }
+}
+
+export async function getConversationMessages(id: string): Promise<ChatMessage[]> {
+  try {
+    const r = await fetch(`${API_URL}/api/v1/conversations/${id}`);
+    if (!r.ok) return [];
+    const data = await r.json();
+    return data.messages || [];
+  } catch { return []; }
+}
+
+export async function setConversationTitle(id: string, title: string): Promise<void> {
+  await fetch(`${API_URL}/api/v1/conversations/${id}/title`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  }).catch(() => {});
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  await fetch(`${API_URL}/api/v1/chat/${id}`, { method: "DELETE" }).catch(() => {});
+}
+
+export async function healthCheck(): Promise<boolean> {
+  try {
+    const r = await fetch(`${API_URL}/health`);
+    return r.ok;
+  } catch { return false; }
+}
+
+// ── Voz - Fase 2 ──────────────────────────────────────────────────────────────
+
+export interface VoiceStatus {
+  stt: { provider: string; enabled: boolean; endpoint: string };
+  tts: { provider: string; voice_id: string; enabled: boolean; endpoint: string };
+}
+
+export async function getVoiceStatus(): Promise<VoiceStatus | null> {
+  try {
+    const r = await fetch(`${API_URL}/api/v1/voice/status`);
+    if (!r.ok) return null;
+    return r.json();
+  } catch { return null; }
+}
+
+/**
+ * Envía un blob de audio al backend y devuelve el transcript.
+ * Requiere GROQ_API_KEY en el backend.
+ */
+export async function transcribeAudio(
+  audioBlob: Blob,
+  language: string = "es"
+): Promise<string> {
+  const formData = new FormData();
+  const ext = audioBlob.type.includes("mp4") ? "mp4" : "webm";
+  formData.append("audio", audioBlob, `recording.${ext}`);
+  formData.append("language", language);
+
+  const r = await fetch(`${API_URL}/api/v1/voice/transcribe`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.detail || `Error ${r.status} en transcripción`);
+  }
+
+  const data = await r.json();
+  return data.transcript || "";
+}
+
+/**
+ * Convierte texto a audio y devuelve un URL de objeto para reproducir.
+ * El backend usa ElevenLabs o Edge TTS como fallback.
+ */
+export async function synthesizeSpeech(
+  text: string,
+  language: string = "es"
+): Promise<string> {
+  const r = await fetch(`${API_URL}/api/v1/voice/synthesize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, language }),
+  });
+
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.detail || `Error ${r.status} en síntesis`);
+  }
+
+  const blob = await r.blob();
+  return URL.createObjectURL(blob);
+}

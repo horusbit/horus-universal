@@ -1,0 +1,74 @@
+{
+  "id": "/",
+  "name": "HORUS Universal",
+  "short_name": "HORUS",
+  "description": "Orquestador Personal de IA Multi-Modelo — 9 agentes especializados",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities", "business"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "ATLAS — Chat General",
+      "short_name": "ATLAS",
+      "url": "/?agent=atlas",
+      "description": "Orquestador maestro — enruta al agente más adecuado",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "CIPHER — Código",
+      "short_name": "CIPHER",
+      "url": "/?agent=cipher",
+      "description": "Asistente de desarrollo y programación",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "NOVA — Marketing",
+      "short_name": "NOVA",
+      "url": "/?agent=nova",
+      "description": "Copywriting y contenido viral",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "ORACLE — Negocios",
+      "short_name": "ORACLE",
+      "url": "/?agent=oracle",
+      "description": "Estrategia de negocios y análisis",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
