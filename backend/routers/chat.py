@@ -10,6 +10,7 @@ from models.schemas import ChatRequest, ChatResponse, Message, AgentType
 from agents import get_agent
 from services.redis_cache import cache
 from services.router import detect_agent, get_routing_message
+from services.supabase_db import ensure_conversation_exists, save_message
 from auth.supabase_auth import get_optional_user
 import logging
 
@@ -44,15 +45,25 @@ async def chat(
         )
 
         full_content = routing_prefix + result["content"]
+        model_used = result.get("model", "unknown")
 
-        # Guardar en cache
-        await cache.append_message(conversation_id, Message(role="user", content=request.message))
-        await cache.append_message(conversation_id, Message(role="assistant", content=full_content))
+        user_msg = Message(role="user", content=request.message)
+        assistant_msg = Message(role="assistant", content=full_content)
+
+        # Redis (rápido)
+        await cache.append_message(conversation_id, user_msg)
+        await cache.append_message(conversation_id, assistant_msg)
+
+        # Supabase (persistente)
+        if user:
+            await ensure_conversation_exists(conversation_id, user.id, effective_agent.value)
+            await save_message(conversation_id, user_msg)
+            await save_message(conversation_id, assistant_msg, effective_agent.value, model_used)
 
         return ChatResponse(
             content=full_content,
             agent=effective_agent,
-            model_used=result.get("model", "unknown"),
+            model_used=model_used,
             conversation_id=conversation_id,
             tokens_used=result.get("usage", {}).get("total_tokens"),
         )
@@ -79,8 +90,13 @@ async def chat_stream_endpoint(
     if request.history:
         history = request.history
 
-    # Guardar mensaje del usuario
-    await cache.append_message(conversation_id, Message(role="user", content=request.message))
+    user_msg = Message(role="user", content=request.message)
+    await cache.append_message(conversation_id, user_msg)
+
+    # Persistir en Supabase si hay usuario
+    if user:
+        await ensure_conversation_exists(conversation_id, user.id, effective_agent.value)
+        await save_message(conversation_id, user_msg)
 
     agent_class = get_agent(effective_agent)
     full_response = []
@@ -88,15 +104,12 @@ async def chat_stream_endpoint(
     async def generate():
         nonlocal full_response
         try:
-            # Metadata inicial con el agente efectivo
             yield f"data: {json.dumps({'type': 'start', 'conversation_id': conversation_id, 'agent': effective_agent.value})}\n\n"
 
-            # Enviar routing prefix si aplica
             if routing_prefix:
                 full_response.append(routing_prefix)
                 yield f"data: {json.dumps({'type': 'chunk', 'content': routing_prefix})}\n\n"
 
-            # Stream del contenido
             async for chunk in agent_class.stream(
                 user_message=request.message,
                 history=history,
@@ -104,13 +117,12 @@ async def chat_stream_endpoint(
                 full_response.append(chunk)
                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
 
-            # Guardar respuesta completa
             complete_response = "".join(full_response)
             if complete_response:
-                await cache.append_message(
-                    conversation_id,
-                    Message(role="assistant", content=complete_response)
-                )
+                assistant_msg = Message(role="assistant", content=complete_response)
+                await cache.append_message(conversation_id, assistant_msg)
+                if user:
+                    await save_message(conversation_id, assistant_msg, effective_agent.value)
 
             yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id, 'agent': effective_agent.value})}\n\n"
 
