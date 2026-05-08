@@ -43,6 +43,12 @@ export default function HorusChat() {
     }
   }, [user, authLoading, router]);
 
+  // Wake-up ping — evita cold start en el primer mensaje
+  useEffect(() => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    fetch(`${API_URL}/health`).catch(() => {});
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
