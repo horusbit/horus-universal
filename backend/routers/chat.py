@@ -97,8 +97,14 @@ async def chat_stream_endpoint(
     user_email = getattr(user, "email", "") if user else ""
     usage = await check_usage_limit(user, user_email)
     if not usage["allowed"]:
+        limit_msg = json.dumps({
+            "type": "error",
+            "code": "limit_reached",
+            "message": f"Límite diario alcanzado ({usage['limit']} mensajes). Actualiza a Pro para uso ilimitado.",
+            "plan": usage["plan"],
+        })
         async def limit_error():
-            yield f"data: {json.dumps({'type': 'error', 'code': 'limit_reached', 'message': f'Límite diario alcanzado ({usage[\"limit\"]} mensajes). Actualiza a Pro para uso ilimitado.', 'plan': usage['plan']})}\n\n"
+            yield f"data: {limit_msg}\n\n"
         return StreamingResponse(limit_error(), media_type="text/event-stream")
 
     conversation_id = request.conversation_id or str(uuid.uuid4())
