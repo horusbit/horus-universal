@@ -25,6 +25,7 @@ const AGENTS: Agent[] = [
   { id: "vector",   name: "VECTOR",   icon: "💼", description: "Ventas & CRM" },
   { id: "chronos",  name: "CHRONOS",  icon: "⏱️", description: "Productividad" },
   { id: "politeia", name: "POLITEIA", icon: "🏛️", description: "Política" },
+  { id: "educraft", name: "EDUCRAFT", icon: "🏫", description: "Edu Online" },
 ];
 
 interface AgentSelectorProps {

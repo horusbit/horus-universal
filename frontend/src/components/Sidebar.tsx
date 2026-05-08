@@ -134,7 +134,7 @@ export default function Sidebar({
         <div className="p-3 border-t border-[#1e1e2e]">
           <div className="flex items-center gap-2 px-2">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse flex-shrink-0" />
-            <span className="text-xs text-[#64748b]">9 agentes activos</span>
+            <span className="text-xs text-[#64748b]">16 agentes activos</span>
           </div>
         </div>
       </aside>

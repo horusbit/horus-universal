@@ -19,6 +19,7 @@ class AgentType(str, Enum):
     VECTOR = "vector"
     CHRONOS = "chronos"
     POLITEIA = "politeia"
+    EDUCRAFT = "educraft"
 
 
 class ModelTier(str, Enum):

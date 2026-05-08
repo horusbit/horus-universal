@@ -7,15 +7,22 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { AgentType, synthesizeSpeech } from "@/lib/api";
 
 const AGENT_META: Record<AgentType | string, { icon: string; color: string }> = {
-  atlas:  { icon: "🌐", color: "bg-indigo-600" },
-  cipher: { icon: "⚡", color: "bg-yellow-600" },
-  nova:   { icon: "✨", color: "bg-pink-600" },
-  lexis:  { icon: "⚖️", color: "bg-blue-600" },
-  oracle: { icon: "🔮", color: "bg-purple-600" },
-  hermes: { icon: "🌍", color: "bg-green-600" },
-  echo:   { icon: "🎙️", color: "bg-orange-600" },
-  darwin: { icon: "🔬", color: "bg-teal-600" },
-  pixel:  { icon: "🎨", color: "bg-rose-600" },
+  atlas:    { icon: "🌐", color: "bg-indigo-600" },
+  cipher:   { icon: "⚡", color: "bg-yellow-600" },
+  nova:     { icon: "✨", color: "bg-pink-600" },
+  lexis:    { icon: "⚖️", color: "bg-blue-600" },
+  oracle:   { icon: "🔮", color: "bg-purple-600" },
+  hermes:   { icon: "🌍", color: "bg-green-600" },
+  echo:     { icon: "🎙️", color: "bg-orange-600" },
+  darwin:   { icon: "🔬", color: "bg-teal-600" },
+  pixel:    { icon: "🎨", color: "bg-rose-600" },
+  nexus:    { icon: "📡", color: "bg-cyan-600" },
+  forge:    { icon: "📊", color: "bg-emerald-600" },
+  sage:     { icon: "🎓", color: "bg-sky-600" },
+  vector:   { icon: "💼", color: "bg-amber-600" },
+  chronos:  { icon: "⏱️", color: "bg-violet-600" },
+  politeia: { icon: "🏛️", color: "bg-slate-600" },
+  educraft: { icon: "🏫", color: "bg-lime-600" },
 };
 
 interface MessageBubbleProps {
@@ -105,7 +112,7 @@ export default function MessageBubble({
           <div className="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed">
             {content}
           </div>
-          <div className="flex items-center justify-end gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center justify-end gap-2 mt-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             {timestamp && <span className="text-[10px] text-[#475569]">{timestamp}</span>}
             <button
               onClick={handleCopy}
@@ -161,26 +168,28 @@ export default function MessageBubble({
                 code({ node, inline, className, children, ...props }: any) {
                   const match = /language-(\w+)/.exec(className || "");
                   return !inline && match ? (
-                    <div className="relative group/code my-3">
-                      <div className="flex items-center justify-between bg-[#1a1a2e] px-3 py-1.5 rounded-t-lg border border-[#2e2e4e]">
+                    <div className="relative group/code my-3 max-w-[calc(100vw-6rem)] sm:max-w-none overflow-hidden rounded-lg">
+                      <div className="flex items-center justify-between bg-[#1a1a2e] px-3 py-1.5 border border-[#2e2e4e] border-b-0 rounded-t-lg">
                         <span className="text-xs text-[#64748b] font-mono">{match[1]}</span>
                         <CopyCodeButton code={String(children).replace(/\n$/, "")} />
                       </div>
-                      <SyntaxHighlighter
-                        style={oneDark}
-                        language={match[1]}
-                        PreTag="div"
-                        customStyle={{
-                          margin: 0,
-                          borderRadius: "0 0 8px 8px",
-                          border: "1px solid #2e2e4e",
-                          borderTop: "none",
-                          fontSize: "12px",
-                        }}
-                        {...props}
-                      >
-                        {String(children).replace(/\n$/, "")}
-                      </SyntaxHighlighter>
+                      <div className="overflow-x-auto">
+                        <SyntaxHighlighter
+                          style={oneDark}
+                          language={match[1]}
+                          PreTag="div"
+                          customStyle={{
+                            margin: 0,
+                            borderRadius: "0 0 8px 8px",
+                            border: "1px solid #2e2e4e",
+                            borderTop: "none",
+                            fontSize: "12px",
+                          }}
+                          {...props}
+                        >
+                          {String(children).replace(/\n$/, "")}
+                        </SyntaxHighlighter>
+                      </div>
                     </div>
                   ) : (
                     <code className={className} {...props}>{children}</code>
@@ -197,7 +206,7 @@ export default function MessageBubble({
 
         {/* Acciones del mensaje */}
         {content && !isStreaming && (
-          <div className="flex items-center gap-3 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-3 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             {timestamp && <span className="text-[10px] text-[#475569]">{timestamp}</span>}
 
             {/* Copiar */}

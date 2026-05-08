@@ -187,17 +187,20 @@ export default function HorusChat() {
           <div className="flex-1">
             <AgentSelector selected={selectedAgent} onChange={setSelectedAgent} />
           </div>
+          {/* Nuevo chat — visible en todos los tamaños */}
           <button
             onClick={startNewChat}
-            className="hidden sm:flex items-center gap-1.5 text-xs text-[#64748b] hover:text-white
-              px-3 py-1.5 rounded-lg border border-[#1e1e2e] hover:border-indigo-500/50 transition-colors"
+            className="flex items-center gap-1 text-xs text-[#64748b] hover:text-white
+              p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-[#1e1e2e] hover:border-indigo-500/50 transition-colors flex-shrink-0"
+            title="Nueva conversación"
           >
-            <span>✏️</span> Nuevo
+            <span>✏️</span>
+            <span className="hidden sm:inline">Nuevo</span>
           </button>
-          {/* Indicador de plan / upgrade */}
+          {/* Indicador de plan / upgrade — visible en todos los tamaños */}
           {userPlan && userPlan.plan === "free" && userPlan.limit && (
-            <div className="hidden sm:flex items-center gap-2">
-              <span className="text-xs text-[#64748b]">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-xs text-[#64748b] hidden sm:inline">
                 {userPlan.used}/{userPlan.limit}
               </span>
               <button
@@ -205,32 +208,34 @@ export default function HorusChat() {
                   const url = await createCheckout();
                   if (url) window.open(url, "_blank");
                 }}
-                className="text-xs px-2.5 py-1 bg-gradient-to-r from-indigo-600 to-purple-600
-                  hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg transition-all"
+                className="text-xs px-2 py-1 sm:px-2.5 bg-gradient-to-r from-indigo-600 to-purple-600
+                  hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg transition-all whitespace-nowrap"
               >
                 ⚡ Pro
               </button>
             </div>
           )}
           {userPlan?.plan === "pro" && (
-            <span className="hidden sm:inline text-xs text-purple-400 font-medium">⚡ Pro</span>
+            <span className="text-xs text-purple-400 font-medium flex-shrink-0">⚡ Pro</span>
           )}
+          {/* Logout */}
           <button
             onClick={signOut}
             className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-red-400
-              px-3 py-1.5 rounded-lg border border-[#1e1e2e] hover:border-red-500/50 transition-colors"
+              p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-[#1e1e2e] hover:border-red-500/50 transition-colors flex-shrink-0"
             title="Cerrar sesión"
           >
             ⏏
           </button>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Indicador online — solo desktop */}
+          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-xs text-[#64748b] hidden sm:inline">Activo</span>
+            <span className="text-xs text-[#64748b]">Activo</span>
           </div>
         </header>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4">
           {messages.length === 0 ? (
             <WelcomeScreen onAgentSelect={setSelectedAgent} onSend={handleSend} />
           ) : (

@@ -13,6 +13,7 @@ from .sage import SageAgent
 from .vector import VectorAgent
 from .chronos import ChronosAgent
 from .politeia import PoliteiaAgent
+from .educraft import EduCraftAgent
 from models.schemas import AgentType
 
 # Registro de agentes
@@ -32,6 +33,7 @@ AGENT_REGISTRY = {
     AgentType.VECTOR: VectorAgent,
     AgentType.CHRONOS: ChronosAgent,
     AgentType.POLITEIA: PoliteiaAgent,
+    AgentType.EDUCRAFT: EduCraftAgent,
 }
 
 

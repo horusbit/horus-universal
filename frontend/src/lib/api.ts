@@ -3,7 +3,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export type AgentType =
   | "atlas" | "cipher" | "nova" | "lexis"
   | "oracle" | "hermes" | "echo" | "darwin" | "pixel"
-  | "nexus" | "forge" | "sage" | "vector" | "chronos" | "politeia";
+  | "nexus" | "forge" | "sage" | "vector" | "chronos" | "politeia" | "educraft";
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -107,7 +107,8 @@ export async function* streamMessage(
 
 export async function getConversations(): Promise<ConversationSummary[]> {
   try {
-    const r = await fetch(`${API_URL}/api/v1/conversations/`);
+    const authHeaders = await getAuthHeaders();
+    const r = await fetch(`${API_URL}/api/v1/conversations/`, { headers: authHeaders });
     if (!r.ok) return [];
     return r.json();
   } catch { return []; }
@@ -115,7 +116,8 @@ export async function getConversations(): Promise<ConversationSummary[]> {
 
 export async function getConversationMessages(id: string): Promise<ChatMessage[]> {
   try {
-    const r = await fetch(`${API_URL}/api/v1/conversations/${id}`);
+    const authHeaders = await getAuthHeaders();
+    const r = await fetch(`${API_URL}/api/v1/conversations/${id}`, { headers: authHeaders });
     if (!r.ok) return [];
     const data = await r.json();
     return data.messages || [];
@@ -123,15 +125,20 @@ export async function getConversationMessages(id: string): Promise<ChatMessage[]
 }
 
 export async function setConversationTitle(id: string, title: string): Promise<void> {
+  const authHeaders = await getAuthHeaders();
   await fetch(`${API_URL}/api/v1/conversations/${id}/title`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders },
     body: JSON.stringify({ title }),
   }).catch(() => {});
 }
 
 export async function deleteConversation(id: string): Promise<void> {
-  await fetch(`${API_URL}/api/v1/chat/${id}`, { method: "DELETE" }).catch(() => {});
+  const authHeaders = await getAuthHeaders();
+  await fetch(`${API_URL}/api/v1/conversations/${id}`, {
+    method: "DELETE",
+    headers: authHeaders,
+  }).catch(() => {});
 }
 
 export async function healthCheck(): Promise<boolean> {

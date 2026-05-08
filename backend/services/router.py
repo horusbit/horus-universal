@@ -66,6 +66,10 @@ ROUTING_RULES = [
         r'\b(política|político|gobierno|gobernanza|campaña electoral|elecciones|candidato|partido político|congreso|parlamento|senado|presidente|alcalde|legislación|ley|decreto|política pública|votantes|electorado|geopolítica|diplomacia)\b',
         r'\b(estrategia política|comunicación política|discurso político|plan de gobierno|política exterior|reforma política)\b',
     ]),
+    (AgentType.EDUCRAFT, [
+        r'\b(plataforma educativa|lms|curso online|curso virtual|e-learning|elearning|moodle|teachable|thinkific|kajabi|coursera|edx|udemy|platzi|masterclass|diseño instruccional|syllabus|curriculum virtual|certificado online|aula virtual)\b',
+        r'\b(crea un curso|diseña una plataforma educativa|landing page de curso|aprende online|enseñanza virtual|crea una academia|escuela online|membresía educativa)\b',
+    ]),
 ]
 
 
@@ -118,6 +122,7 @@ def get_routing_message(detected_agent: AgentType, original_agent: AgentType) ->
             AgentType.VECTOR:   "VECTOR 💼",
             AgentType.CHRONOS:  "CHRONOS ⏱️",
             AgentType.POLITEIA: "POLITEIA 🏛️",
+            AgentType.EDUCRAFT:  "EDUCRAFT 🏫",
         }
         name = agent_names.get(detected_agent, detected_agent.value.upper())
         return f"*Activando agente {name}...*\n\n"
