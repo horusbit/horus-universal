@@ -28,7 +28,13 @@ class Settings(BaseSettings):
     # Voz - Fase 2
     GROQ_API_KEY: str = ""
     ELEVENLABS_API_KEY: str = ""
-    ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # Rachel - voz natural por defecto
+    ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"
+
+    # Lemon Squeezy - Fase 6
+    LEMONSQUEEZY_API_KEY: str = ""
+    LEMONSQUEEZY_STORE_ID: str = ""
+    LEMONSQUEEZY_VARIANT_ID: str = ""
+    LEMONSQUEEZY_WEBHOOK_SECRET: str = ""
 
     # Modelos activos
     MODEL_PRIMARY: str = "google/gemma-3-4b-it:free"
