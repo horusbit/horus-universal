@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   streamMessage, AgentType, ChatMessage,
   getConversationMessages, setConversationTitle,
+  getUserPlan, createCheckout, UserPlan,
 } from "@/lib/api";
 
 interface Message extends ChatMessage {
@@ -33,6 +34,7 @@ export default function HorusChat() {
   const [conversationId, setConversationId] = useState<string>(uuidv4());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarRefresh, setSidebarRefresh] = useState(0);
+  const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const titleSetRef = useRef(false);
 
@@ -43,11 +45,12 @@ export default function HorusChat() {
     }
   }, [user, authLoading, router]);
 
-  // Wake-up ping — evita cold start en el primer mensaje
+  // Wake-up ping + cargar plan del usuario
   useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     fetch(`${API_URL}/health`).catch(() => {});
-  }, []);
+    if (user) getUserPlan().then(setUserPlan);
+  }, [user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -121,19 +124,22 @@ export default function HorusChat() {
       }
 
       setSidebarRefresh(r => r + 1);
+      // Refrescar plan después de cada mensaje
+      if (user) getUserPlan().then(setUserPlan);
 
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error && err.message.includes("limit_reached")
+        ? "⚠️ Límite diario alcanzado. [Actualiza a Pro ⚡](javascript:void(0)) para uso ilimitado."
+        : "❌ Error conectando con el servidor. Verifica que el backend esté corriendo.";
       setMessages(prev =>
         prev.map(m =>
-          m.id === assistantMsgId
-            ? { ...m, content: "❌ Error conectando con el servidor. Verifica que el backend esté corriendo." }
-            : m
+          m.id === assistantMsgId ? { ...m, content: msg } : m
         )
       );
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, selectedAgent, conversationId, messages, autoSetTitle]);
+  }, [isLoading, selectedAgent, conversationId, messages, autoSetTitle, user]);
 
   // ── Returns condicionales DESPUÉS de todos los hooks ──
   if (authLoading) {
@@ -188,6 +194,27 @@ export default function HorusChat() {
           >
             <span>✏️</span> Nuevo
           </button>
+          {/* Indicador de plan / upgrade */}
+          {userPlan && userPlan.plan === "free" && userPlan.limit && (
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-xs text-[#64748b]">
+                {userPlan.used}/{userPlan.limit}
+              </span>
+              <button
+                onClick={async () => {
+                  const url = await createCheckout();
+                  if (url) window.open(url, "_blank");
+                }}
+                className="text-xs px-2.5 py-1 bg-gradient-to-r from-indigo-600 to-purple-600
+                  hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg transition-all"
+              >
+                ⚡ Pro
+              </button>
+            </div>
+          )}
+          {userPlan?.plan === "pro" && (
+            <span className="hidden sm:inline text-xs text-purple-400 font-medium">⚡ Pro</span>
+          )}
           <button
             onClick={signOut}
             className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-red-400

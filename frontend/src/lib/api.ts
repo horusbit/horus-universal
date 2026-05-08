@@ -140,6 +140,38 @@ export async function healthCheck(): Promise<boolean> {
   } catch { return false; }
 }
 
+// ── Billing - Fase 6 ─────────────────────────────────────────────────────────
+
+export interface UserPlan {
+  plan: string;
+  used: number;
+  limit: number | null;
+  remaining?: number;
+  allowed: boolean;
+}
+
+export async function getUserPlan(): Promise<UserPlan> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const r = await fetch(`${API_URL}/api/v1/billing/plan`, { headers: authHeaders });
+    if (!r.ok) return { plan: "free", used: 0, limit: 50, allowed: true };
+    return r.json();
+  } catch { return { plan: "free", used: 0, limit: 50, allowed: true }; }
+}
+
+export async function createCheckout(): Promise<string | null> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const r = await fetch(`${API_URL}/api/v1/billing/checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders },
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data.checkout_url || null;
+  } catch { return null; }
+}
+
 // ── Voz - Fase 2 ──────────────────────────────────────────────────────────────
 
 export interface VoiceStatus {
