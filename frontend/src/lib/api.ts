@@ -226,6 +226,86 @@ export async function transcribeAudio(
  * Convierte texto a audio y devuelve un URL de objeto para reproducir.
  * El backend usa ElevenLabs o Edge TTS como fallback.
  */
+// ── Imágenes — PIXEL ─────────────────────────────────────────────────────────
+
+export interface ImageGenerateRequest {
+  prompt: string;
+  width?: number;
+  height?: number;
+  model?: string;
+}
+
+export interface ImageGenerateResponse {
+  url: string;
+  prompt: string;
+  model: string;
+  width: number;
+  height: number;
+}
+
+export async function generateImage(req: ImageGenerateRequest): Promise<ImageGenerateResponse> {
+  const authHeaders = await getAuthHeaders();
+  const r = await fetch(`${API_URL}/api/v1/images/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify({
+      prompt: req.prompt,
+      width: req.width ?? 1024,
+      height: req.height ?? 1024,
+      model: req.model ?? "flux",
+      nologo: true,
+      enhance: true,
+    }),
+  });
+  if (!r.ok) throw new Error(`Image generation error ${r.status}`);
+  return r.json();
+}
+
+// ── Búsqueda de conversaciones ────────────────────────────────────────────────
+
+export async function searchConversations(q: string): Promise<ConversationSummary[]> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const r = await fetch(`${API_URL}/api/v1/conversations/search?q=${encodeURIComponent(q)}`, {
+      headers: authHeaders,
+    });
+    if (!r.ok) return [];
+    return r.json();
+  } catch { return []; }
+}
+
+// ── Compartir conversaciones ──────────────────────────────────────────────────
+
+export interface ShareResponse {
+  token: string;
+  share_url: string;
+}
+
+export async function shareConversation(id: string): Promise<ShareResponse | null> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const r = await fetch(`${API_URL}/api/v1/conversations/${id}/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders },
+    });
+    if (!r.ok) return null;
+    return r.json();
+  } catch { return null; }
+}
+
+export async function getSharedConversation(token: string): Promise<{
+  conversation_id: string;
+  title: string;
+  agent: string;
+  messages: { role: string; content: string }[];
+} | null> {
+  try {
+    const r = await fetch(`${API_URL}/api/v1/share/${token}`);
+    if (!r.ok) return null;
+    return r.json();
+  } catch { return null; }
+}
+
 export async function synthesizeSpeech(
   text: string,
   language: string = "es"

@@ -82,6 +82,21 @@ export default function HorusChat() {
     await setConversationTitle(convId, title);
   }, []);
 
+  const handleRegenerate = useCallback(async () => {
+    if (isLoading || messages.length < 2) return;
+    let lastUserMsg = "";
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        lastUserMsg = messages[i].content;
+        break;
+      }
+    }
+    if (!lastUserMsg) return;
+    // Quitar el último mensaje asistente y re-enviar
+    setMessages(prev => prev.slice(0, -1));
+    await handleSend(lastUserMsg);
+  }, [isLoading, messages, handleSend]);
+
   const exportConversation = useCallback(() => {
     if (!messages.length) return;
     const lines = messages.map(m => {
@@ -266,7 +281,7 @@ export default function HorusChat() {
             <WelcomeScreen onAgentSelect={setSelectedAgent} onSend={handleSend} />
           ) : (
             <>
-              {messages.map(msg => (
+              {messages.map((msg, idx) => (
                 <MessageBubble
                   key={msg.id}
                   role={msg.role as "user" | "assistant"}
@@ -275,6 +290,9 @@ export default function HorusChat() {
                   model={msg.model}
                   isStreaming={isLoading && msg.id === messages[messages.length - 1]?.id && msg.role === "assistant"}
                   timestamp={msg.timestamp}
+                  conversationId={conversationId}
+                  isLast={idx === messages.length - 1 && msg.role === "assistant"}
+                  onRegenerate={handleRegenerate}
                 />
               ))}
               <div ref={messagesEndRef} />

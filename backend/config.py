@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: str = ""
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"
 
+    # Telegram bot
+    TELEGRAM_BOT_TOKEN: str = ""
+
     # Lemon Squeezy - Fase 6
     LEMONSQUEEZY_API_KEY: str = ""
     LEMONSQUEEZY_STORE_ID: str = ""

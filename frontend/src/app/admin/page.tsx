@@ -149,7 +149,7 @@ export default function AdminPanel() {
   if (!user || user.email !== ADMIN_EMAIL) return null;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-[#e2e8f0]">
+    <div className="h-screen overflow-y-auto bg-[#0a0a0f] text-[#e2e8f0]">
       {/* Header */}
       <header className="border-b border-[#1e1e2e] bg-[#12121a] px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">

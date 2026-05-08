@@ -115,6 +115,73 @@ async def delete_conversation(conversation_id: str, user_id: str = None) -> bool
         return False
 
 
+async def search_conversations(user_id: str, query: str, limit: int = 20) -> list:
+    """Busca conversaciones del usuario por título."""
+    try:
+        client = _get_client()
+        result = client.table("conversations") \
+            .select("id, title, agent, updated_at") \
+            .eq("user_id", user_id) \
+            .ilike("title", f"%{query}%") \
+            .order("updated_at", desc=True) \
+            .limit(limit) \
+            .execute()
+        return result.data or []
+    except Exception as e:
+        logger.error(f"[SupabaseDB] search_conversations error: {e}")
+        return []
+
+
+async def create_share_token(conversation_id: str, user_id: str) -> Optional[str]:
+    """Crea un token público para compartir una conversación. Devuelve el token."""
+    try:
+        token = str(uuid.uuid4())
+        client = _get_client()
+        client.table("shared_conversations").upsert({
+            "conversation_id": conversation_id,
+            "user_id": user_id,
+            "token": token,
+        }, on_conflict="conversation_id").execute()
+        return token
+    except Exception as e:
+        logger.error(f"[SupabaseDB] create_share_token error: {e}")
+        return None
+
+
+async def get_shared_conversation(token: str) -> Optional[dict]:
+    """Obtiene los datos de una conversación compartida por token."""
+    try:
+        client = _get_client()
+        result = client.table("shared_conversations") \
+            .select("conversation_id, user_id") \
+            .eq("token", token) \
+            .limit(1) \
+            .execute()
+        if not result.data:
+            return None
+        row = result.data[0]
+        conv_id = row["conversation_id"]
+        # Obtener título
+        conv = client.table("conversations") \
+            .select("title, agent") \
+            .eq("id", conv_id) \
+            .limit(1) \
+            .execute()
+        title = conv.data[0]["title"] if conv.data else "Conversación"
+        agent = conv.data[0].get("agent", "atlas") if conv.data else "atlas"
+        # Obtener mensajes
+        messages = await get_conversation_messages(conv_id)
+        return {
+            "conversation_id": conv_id,
+            "title": title,
+            "agent": agent,
+            "messages": [m.model_dump() for m in messages],
+        }
+    except Exception as e:
+        logger.error(f"[SupabaseDB] get_shared_conversation error: {e}")
+        return None
+
+
 async def ensure_conversation_exists(conversation_id: str, user_id: str, agent: str = "atlas") -> bool:
     """Verifica si existe una conversación; si no, la crea con el ID dado."""
     try:

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { AgentType, synthesizeSpeech } from "@/lib/api";
+import { AgentType, synthesizeSpeech, generateImage, shareConversation } from "@/lib/api";
 
 const AGENT_META: Record<AgentType | string, { icon: string; color: string }> = {
   atlas:    { icon: "🌐", color: "bg-indigo-600" },
@@ -32,13 +32,130 @@ interface MessageBubbleProps {
   model?: string;
   isStreaming?: boolean;
   timestamp?: string;
+  conversationId?: string;
+  isLast?: boolean;
+  onRegenerate?: () => void;
 }
 
+// ── Parsear bloques [HORUS_IMAGE] ──────────────────────────────────────────────
+interface TextPart  { type: "text";  content: string }
+interface ImagePart { type: "image"; prompt: string; model: string; width: number; height: number }
+type ContentPart = TextPart | ImagePart;
+
+function parseContent(raw: string): ContentPart[] {
+  const parts: ContentPart[] = [];
+  const regex = /\[HORUS_IMAGE\]([\s\S]*?)\[\/HORUS_IMAGE\]/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(raw)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: "text", content: raw.slice(lastIndex, match.index) });
+    }
+    const block = match[1];
+    const get = (key: string, fallback: string) => {
+      const m = new RegExp(`${key}:\\s*(.+)`).exec(block);
+      return m ? m[1].trim() : fallback;
+    };
+    parts.push({
+      type: "image",
+      prompt: get("prompt", ""),
+      model: get("model", "flux"),
+      width: parseInt(get("width", "1024"), 10),
+      height: parseInt(get("height", "1024"), 10),
+    });
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < raw.length) {
+    parts.push({ type: "text", content: raw.slice(lastIndex) });
+  }
+  return parts;
+}
+
+// ── Componente de imagen generada ─────────────────────────────────────────────
+function ImageBlock({ prompt, model, width, height }: Omit<ImagePart, "type">) {
+  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [imageUrl, setImageUrl] = useState<string>("");
+
+  const handleGenerate = useCallback(async () => {
+    if (!prompt) return;
+    setState("loading");
+    try {
+      const res = await generateImage({ prompt, model, width, height });
+      setImageUrl(res.url);
+      setState("done");
+    } catch {
+      setState("error");
+    }
+  }, [prompt, model, width, height]);
+
+  if (state === "idle") {
+    return (
+      <div className="my-3 p-3 border border-rose-500/30 rounded-xl bg-rose-950/20">
+        <p className="text-xs text-rose-300 mb-2">🎨 Imagen lista para generar</p>
+        <p className="text-[11px] text-[#64748b] mb-3 line-clamp-2">{prompt}</p>
+        <button
+          onClick={handleGenerate}
+          className="text-xs px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg transition-colors"
+        >
+          Generar imagen
+        </button>
+      </div>
+    );
+  }
+
+  if (state === "loading") {
+    return (
+      <div className="my-3 p-4 border border-rose-500/30 rounded-xl bg-rose-950/20 flex items-center gap-3">
+        <span className="w-4 h-4 border-2 border-rose-400/30 border-t-rose-400 rounded-full animate-spin flex-shrink-0" />
+        <span className="text-xs text-rose-300">Generando imagen con {model}...</span>
+      </div>
+    );
+  }
+
+  if (state === "error") {
+    return (
+      <div className="my-3 p-3 border border-red-500/30 rounded-xl bg-red-950/20">
+        <p className="text-xs text-red-400">⚠️ Error generando imagen.</p>
+        <button onClick={handleGenerate} className="text-xs text-[#64748b] hover:text-white mt-1">
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-3 rounded-xl overflow-hidden border border-[#1e1e2e]">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={imageUrl}
+        alt={prompt}
+        className="w-full max-w-lg rounded-xl"
+        loading="lazy"
+      />
+      <div className="flex items-center justify-between px-3 py-2 bg-[#0d0d14]">
+        <span className="text-[10px] text-[#475569] truncate max-w-[200px]">{prompt}</span>
+        <a
+          href={imageUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] text-[#64748b] hover:text-white transition-colors flex-shrink-0 ml-2"
+        >
+          ↗ abrir
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ── Componente principal ───────────────────────────────────────────────────────
 export default function MessageBubble({
-  role, content, agent, model, isStreaming, timestamp
+  role, content, agent, model, isStreaming, timestamp, conversationId, isLast, onRegenerate
 }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [ttsState, setTtsState] = useState<"idle" | "loading" | "playing">("idle");
+  const [shareState, setShareState] = useState<"idle" | "loading" | "copied">("idle");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string>("");
 
@@ -48,29 +165,43 @@ export default function MessageBubble({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleShare = async () => {
+    if (!conversationId) return;
+    setShareState("loading");
+    try {
+      const res = await shareConversation(conversationId);
+      if (res) {
+        const fullUrl = `${window.location.origin}/share/${res.token}`;
+        await navigator.clipboard.writeText(fullUrl);
+        setShareState("copied");
+        setTimeout(() => setShareState("idle"), 3000);
+      } else {
+        setShareState("idle");
+      }
+    } catch {
+      setShareState("idle");
+    }
+  };
+
   const handleSpeak = async () => {
-    // Si está reproduciendo, parar
     if (ttsState === "playing") {
       audioRef.current?.pause();
       if (audioRef.current) audioRef.current.currentTime = 0;
       setTtsState("idle");
       return;
     }
-
     setTtsState("loading");
-
     try {
-      // Limpiar texto para TTS (quitar markdown y código)
       const cleanText = content
         .replace(/```[\s\S]*?```/g, " [bloque de código] ")
         .replace(/`[^`]+`/g, "")
         .replace(/#{1,6}\s/g, "")
         .replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1")
         .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/\[HORUS_IMAGE\][\s\S]*?\[\/HORUS_IMAGE\]/g, "")
         .trim()
-        .slice(0, 1500); // máx 1500 chars para TTS
+        .slice(0, 1500);
 
-      // Revocar URL anterior si existe
       if (audioUrlRef.current) {
         URL.revokeObjectURL(audioUrlRef.current);
         audioUrlRef.current = "";
@@ -78,18 +209,13 @@ export default function MessageBubble({
 
       const url = await synthesizeSpeech(cleanText);
       audioUrlRef.current = url;
-
       const audio = new Audio(url);
       audioRef.current = audio;
-
       audio.onended = () => setTtsState("idle");
       audio.onerror = () => setTtsState("idle");
-
       await audio.play();
       setTtsState("playing");
-
-    } catch (err) {
-      // Fallback: Web Speech API del navegador
+    } catch {
       try {
         const utterance = new SpeechSynthesisUtterance(
           content.replace(/```[\s\S]*?```/g, "").slice(0, 500)
@@ -128,6 +254,7 @@ export default function MessageBubble({
 
   const meta = AGENT_META[agent || "atlas"] || AGENT_META.atlas;
   const agentName = agent?.toUpperCase() || "ATLAS";
+  const parts = content ? parseContent(content) : [];
 
   return (
     <div className="flex gap-3 mb-4 group">
@@ -137,7 +264,7 @@ export default function MessageBubble({
       </div>
 
       <div className="flex-1 min-w-0">
-        {/* Header del agente */}
+        {/* Header */}
         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
           <span className="text-xs font-bold text-[#e2e8f0]">{agentName}</span>
           {model && (
@@ -158,55 +285,62 @@ export default function MessageBubble({
           )}
         </div>
 
-        {/* Contenido del mensaje */}
+        {/* Contenido */}
         <div className="text-sm text-[#e2e8f0] leading-relaxed prose prose-invert prose-sm max-w-none
           prose-code:bg-[#1e1e2e] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-indigo-300
           prose-pre:bg-transparent prose-pre:p-0">
-          {content ? (
-            <ReactMarkdown
-              components={{
-                code({ node, inline, className, children, ...props }: any) {
-                  const match = /language-(\w+)/.exec(className || "");
-                  return !inline && match ? (
-                    <div className="relative group/code my-3 max-w-[calc(100vw-6rem)] sm:max-w-none overflow-hidden rounded-lg">
-                      <div className="flex items-center justify-between bg-[#1a1a2e] px-3 py-1.5 border border-[#2e2e4e] border-b-0 rounded-t-lg">
-                        <span className="text-xs text-[#64748b] font-mono">{match[1]}</span>
-                        <CopyCodeButton code={String(children).replace(/\n$/, "")} />
-                      </div>
-                      <div className="overflow-x-auto">
-                        <SyntaxHighlighter
-                          style={oneDark}
-                          language={match[1]}
-                          PreTag="div"
-                          customStyle={{
-                            margin: 0,
-                            borderRadius: "0 0 8px 8px",
-                            border: "1px solid #2e2e4e",
-                            borderTop: "none",
-                            fontSize: "12px",
-                          }}
-                          {...props}
-                        >
-                          {String(children).replace(/\n$/, "")}
-                        </SyntaxHighlighter>
-                      </div>
-                    </div>
-                  ) : (
-                    <code className={className} {...props}>{children}</code>
-                  );
-                },
-              }}
-            >
-              {content}
-            </ReactMarkdown>
+          {parts.length > 0 ? (
+            parts.map((part, i) =>
+              part.type === "image" ? (
+                <ImageBlock key={i} {...part} />
+              ) : part.content.trim() ? (
+                <ReactMarkdown
+                  key={i}
+                  components={{
+                    code({ node, inline, className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || "");
+                      return !inline && match ? (
+                        <div className="relative group/code my-3 max-w-[calc(100vw-6rem)] sm:max-w-none overflow-hidden rounded-lg">
+                          <div className="flex items-center justify-between bg-[#1a1a2e] px-3 py-1.5 border border-[#2e2e4e] border-b-0 rounded-t-lg">
+                            <span className="text-xs text-[#64748b] font-mono">{match[1]}</span>
+                            <CopyCodeButton code={String(children).replace(/\n$/, "")} />
+                          </div>
+                          <div className="overflow-x-auto">
+                            <SyntaxHighlighter
+                              style={oneDark}
+                              language={match[1]}
+                              PreTag="div"
+                              customStyle={{
+                                margin: 0,
+                                borderRadius: "0 0 8px 8px",
+                                border: "1px solid #2e2e4e",
+                                borderTop: "none",
+                                fontSize: "12px",
+                              }}
+                              {...props}
+                            >
+                              {String(children).replace(/\n$/, "")}
+                            </SyntaxHighlighter>
+                          </div>
+                        </div>
+                      ) : (
+                        <code className={className} {...props}>{children}</code>
+                      );
+                    },
+                  }}
+                >
+                  {part.content}
+                </ReactMarkdown>
+              ) : null
+            )
           ) : isStreaming ? (
             <span className="text-[#475569] italic text-xs">Pensando...</span>
           ) : null}
         </div>
 
-        {/* Acciones del mensaje */}
+        {/* Acciones */}
         {content && !isStreaming && (
-          <div className="flex items-center gap-3 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-3 mt-2 flex-wrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             {timestamp && <span className="text-[10px] text-[#475569]">{timestamp}</span>}
 
             {/* Copiar */}
@@ -217,11 +351,10 @@ export default function MessageBubble({
               {copied ? "✓ copiado" : "📋 copiar"}
             </button>
 
-            {/* Escuchar - TTS */}
+            {/* TTS */}
             <button
               onClick={handleSpeak}
               disabled={ttsState === "loading"}
-              title={ttsState === "playing" ? "Detener" : "Escuchar respuesta"}
               className={`text-[10px] flex items-center gap-1 transition-colors
                 ${ttsState === "loading" ? "text-[#475569] cursor-wait" : ""}
                 ${ttsState === "playing" ? "text-indigo-400 hover:text-red-400" : "text-[#475569] hover:text-[#94a3b8]"}
@@ -232,6 +365,34 @@ export default function MessageBubble({
               )}
               {ttsState === "loading" ? "cargando..." : ttsState === "playing" ? "⏹ detener" : "🔊 escuchar"}
             </button>
+
+            {/* Compartir conversación */}
+            {conversationId && (
+              <button
+                onClick={handleShare}
+                disabled={shareState === "loading"}
+                className={`text-[10px] flex items-center gap-1 transition-colors
+                  ${shareState === "loading" ? "text-[#475569] cursor-wait" : ""}
+                  ${shareState === "copied" ? "text-green-400" : "text-[#475569] hover:text-[#94a3b8]"}
+                `}
+              >
+                {shareState === "loading" && (
+                  <span className="w-2.5 h-2.5 border border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+                )}
+                {shareState === "copied" ? "✓ link copiado" : shareState === "loading" ? "generando..." : "🔗 compartir"}
+              </button>
+            )}
+
+            {/* Regenerar — solo en último mensaje */}
+            {isLast && onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                className="text-[10px] text-[#475569] hover:text-indigo-400 transition-colors flex items-center gap-1"
+                title="Regenerar respuesta"
+              >
+                🔄 regenerar
+              </button>
+            )}
           </div>
         )}
       </div>

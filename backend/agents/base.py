@@ -28,9 +28,19 @@ class BaseAgent(ABC):
         )
 
     @classmethod
-    def build_messages(cls, user_message: str, history: List[Message]) -> List[Message]:
-        """Construye la lista de mensajes con system prompt del agente."""
-        messages = [Message(role="system", content=cls.system_prompt)]
+    def build_messages(
+        cls,
+        user_message: str,
+        history: List[Message],
+        extra_system_context: str = "",
+    ) -> List[Message]:
+        """Construye la lista de mensajes con system prompt del agente.
+        extra_system_context se añade al final del system prompt (ej. memoria del usuario).
+        """
+        system_content = cls.system_prompt
+        if extra_system_context:
+            system_content = system_content + extra_system_context
+        messages = [Message(role="system", content=system_content)]
         messages.extend(history[-10:])  # Últimos 10 mensajes del historial
         messages.append(Message(role="user", content=user_message))
         return messages
@@ -41,9 +51,10 @@ class BaseAgent(ABC):
         user_message: str,
         history: List[Message] = None,
         temperature: float = 0.7,
+        extra_system_context: str = "",
     ) -> dict:
         """Respuesta completa (no streaming)."""
-        messages = cls.build_messages(user_message, history or [])
+        messages = cls.build_messages(user_message, history or [], extra_system_context)
         return await chat_completion(
             messages=messages,
             tier=cls.preferred_tier,
@@ -56,9 +67,10 @@ class BaseAgent(ABC):
         user_message: str,
         history: List[Message] = None,
         temperature: float = 0.7,
+        extra_system_context: str = "",
     ) -> AsyncGenerator[str, None]:
         """Respuesta en streaming."""
-        messages = cls.build_messages(user_message, history or [])
+        messages = cls.build_messages(user_message, history or [], extra_system_context)
         async for chunk in chat_stream(
             messages=messages,
             tier=cls.preferred_tier,

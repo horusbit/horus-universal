@@ -11,6 +11,9 @@ from routers import chat_router, agents_router, conversations_router, voice_rout
 from routers.billing import router as billing_router
 from routers.files import router as files_router
 from routers.admin import router as admin_router
+from routers.images import router as images_router
+from routers.telegram import router as telegram_router
+from routers.share import router as share_router
 import logging
 
 logging.basicConfig(
@@ -56,6 +59,9 @@ app.include_router(voice_router, prefix="/api/v1")
 app.include_router(billing_router, prefix="/api/v1")
 app.include_router(files_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(images_router, prefix="/api/v1")
+app.include_router(telegram_router, prefix="/api/v1")
+app.include_router(share_router, prefix="/api/v1")
 
 
 @app.get("/")

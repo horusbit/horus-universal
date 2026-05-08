@@ -12,6 +12,7 @@ from services.redis_cache import cache
 from services.router import detect_agent, get_routing_message
 from services.supabase_db import ensure_conversation_exists, save_message
 from services.usage import check_usage_limit, increment_usage
+from services.memory import get_user_memory, extract_and_save_facts, build_memory_context
 from auth.supabase_auth import get_optional_user
 import logging
 
@@ -51,10 +52,18 @@ async def chat(
     agent_class = get_agent(effective_agent)
     routing_prefix = get_routing_message(effective_agent, request.agent) or ""
 
+    # Cargar y extraer memoria del usuario
+    memory_context = ""
+    if user:
+        memory = await get_user_memory(user.id)
+        memory_context = build_memory_context(memory)
+        await extract_and_save_facts(user.id, request.message)
+
     try:
         result = await agent_class.respond(
             user_message=request.message,
             history=history,
+            extra_system_context=memory_context,
         )
 
         full_content = routing_prefix + result["content"]
@@ -118,7 +127,12 @@ async def chat_stream_endpoint(
     user_msg = Message(role="user", content=request.message)
     await cache.append_message(conversation_id, user_msg)
 
+    # Cargar memoria + persistir mensaje de usuario
+    memory_context = ""
     if user:
+        memory = await get_user_memory(user.id)
+        memory_context = build_memory_context(memory)
+        await extract_and_save_facts(user.id, request.message)
         await ensure_conversation_exists(conversation_id, user.id, effective_agent.value)
         await save_message(conversation_id, user_msg)
         await increment_usage(user.id)
@@ -138,6 +152,7 @@ async def chat_stream_endpoint(
             async for chunk in agent_class.stream(
                 user_message=request.message,
                 history=history,
+                extra_system_context=memory_context,
             ):
                 full_response.append(chunk)
                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"

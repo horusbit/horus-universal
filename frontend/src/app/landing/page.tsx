@@ -61,7 +61,7 @@ export default function LandingPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-[#e2e8f0]">
+    <div className="h-screen overflow-y-auto bg-[#0a0a0f] text-[#e2e8f0]" style={{ overflowY: "auto" }}>
 
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#1e1e2e]/80 bg-[#0a0a0f]/90 backdrop-blur-md">

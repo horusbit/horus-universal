@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ConversationSummary, getConversations, deleteConversation } from "@/lib/api";
+import { useEffect, useState, useCallback } from "react";
+import { ConversationSummary, getConversations, deleteConversation, searchConversations } from "@/lib/api";
 
 interface SidebarProps {
   currentId: string | null;
@@ -17,6 +17,9 @@ export default function Sidebar({
 }: SidebarProps) {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<ConversationSummary[] | null>(null);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -27,12 +30,30 @@ export default function Sidebar({
     return () => { mounted = false; };
   }, [refreshTrigger]);
 
+  // Búsqueda con debounce
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      const results = await searchConversations(searchQuery.trim());
+      setSearchResults(results);
+      setSearching(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     await deleteConversation(id);
     setConversations(prev => prev.filter(c => c.id !== id));
+    if (searchResults) setSearchResults(prev => prev ? prev.filter(c => c.id !== id) : null);
     if (currentId === id) onNewChat();
   };
+
+  const displayList = searchResults ?? conversations;
 
   return (
     <>
@@ -65,7 +86,7 @@ export default function Sidebar({
         </div>
 
         {/* New Chat */}
-        <div className="p-3">
+        <div className="p-3 pb-1">
           <button
             onClick={() => { onNewChat(); onClose(); }}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg
@@ -77,18 +98,50 @@ export default function Sidebar({
           </button>
         </div>
 
+        {/* Búsqueda */}
+        <div className="px-3 pb-2">
+          <div className="relative">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#475569] text-xs pointer-events-none">🔍</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Buscar conversaciones..."
+              className="w-full bg-[#12121a] border border-[#1e1e2e] rounded-lg pl-7 pr-3 py-1.5
+                text-xs text-[#e2e8f0] placeholder-[#475569]
+                focus:outline-none focus:border-indigo-500/50 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#475569] hover:text-white text-xs"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Lista de conversaciones */}
         <div className="flex-1 overflow-y-auto px-2 pb-4">
-          {loading ? (
+          {loading && !searchResults ? (
             <div className="text-center text-[#64748b] text-xs py-8">Cargando...</div>
-          ) : conversations.length === 0 ? (
+          ) : searching ? (
+            <div className="text-center text-[#64748b] text-xs py-8">Buscando...</div>
+          ) : displayList.length === 0 ? (
             <div className="text-center text-[#64748b] text-xs py-8 px-4">
-              <p className="mb-1">Sin conversaciones aún</p>
-              <p>Empieza un chat ↑</p>
+              {searchQuery ? (
+                <p>Sin resultados para &ldquo;{searchQuery}&rdquo;</p>
+              ) : (
+                <>
+                  <p className="mb-1">Sin conversaciones aún</p>
+                  <p>Empieza un chat ↑</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="space-y-0.5 mt-1">
-              {conversations.map((conv) => (
+              {displayList.map((conv) => (
                 <div
                   key={conv.id}
                   onClick={() => { onSelect(conv.id); onClose(); }}
