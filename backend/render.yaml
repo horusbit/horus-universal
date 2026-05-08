@@ -3,7 +3,8 @@ services:
     name: horus-backend
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    pythonVersion: "3.12.0"
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt --prefer-binary
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: SUPABASE_URL
@@ -24,7 +25,6 @@ services:
         value: https://horus-universal.vercel.app,http://localhost:3000
       - key: DEBUG
         value: "false"
-      # Fase 2 — Voz (añade los valores reales en Render Dashboard > Environment)
       - key: GROQ_API_KEY
         sync: false
       - key: ELEVENLABS_API_KEY
