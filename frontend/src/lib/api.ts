@@ -2,7 +2,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export type AgentType =
   | "atlas" | "cipher" | "nova" | "lexis"
-  | "oracle" | "hermes" | "echo" | "darwin" | "pixel";
+  | "oracle" | "hermes" | "echo" | "darwin" | "pixel"
+  | "nexus" | "forge" | "sage" | "vector" | "chronos" | "politeia";
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";

@@ -7,6 +7,12 @@ from .hermes import HermesAgent
 from .echo import EchoAgent
 from .darwin import DarwinAgent
 from .pixel import PixelAgent
+from .nexus import NexusAgent
+from .forge import ForgeAgent
+from .sage import SageAgent
+from .vector import VectorAgent
+from .chronos import ChronosAgent
+from .politeia import PoliteiaAgent
 from models.schemas import AgentType
 
 # Registro de agentes
@@ -20,6 +26,12 @@ AGENT_REGISTRY = {
     AgentType.ECHO: EchoAgent,
     AgentType.DARWIN: DarwinAgent,
     AgentType.PIXEL: PixelAgent,
+    AgentType.NEXUS: NexusAgent,
+    AgentType.FORGE: ForgeAgent,
+    AgentType.SAGE: SageAgent,
+    AgentType.VECTOR: VectorAgent,
+    AgentType.CHRONOS: ChronosAgent,
+    AgentType.POLITEIA: PoliteiaAgent,
 }
 
 

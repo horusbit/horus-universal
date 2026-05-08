@@ -10,15 +10,21 @@ interface Agent {
 }
 
 const AGENTS: Agent[] = [
-  { id: "atlas",  name: "ATLAS",  icon: "🌐", description: "Orquestador" },
-  { id: "cipher", name: "CIPHER", icon: "⚡", description: "Código" },
-  { id: "nova",   name: "NOVA",   icon: "✨", description: "Marketing" },
-  { id: "lexis",  name: "LEXIS",  icon: "⚖️", description: "Legal" },
-  { id: "oracle", name: "ORACLE", icon: "🔮", description: "Estrategia" },
-  { id: "hermes", name: "HERMES", icon: "🌍", description: "Traducción" },
-  { id: "echo",   name: "ECHO",   icon: "🎙️", description: "Voz" },
-  { id: "darwin", name: "DARWIN", icon: "🔬", description: "Investigación" },
-  { id: "pixel",  name: "PIXEL",  icon: "🎨", description: "Imágenes" },
+  { id: "atlas",    name: "ATLAS",    icon: "🌐", description: "Orquestador" },
+  { id: "cipher",   name: "CIPHER",   icon: "⚡", description: "Código" },
+  { id: "nova",     name: "NOVA",     icon: "✨", description: "Marketing" },
+  { id: "lexis",    name: "LEXIS",    icon: "⚖️", description: "Legal" },
+  { id: "oracle",   name: "ORACLE",   icon: "🔮", description: "Estrategia" },
+  { id: "hermes",   name: "HERMES",   icon: "🌍", description: "Traducción" },
+  { id: "echo",     name: "ECHO",     icon: "🎙️", description: "Voz" },
+  { id: "darwin",   name: "DARWIN",   icon: "🔬", description: "Investigación" },
+  { id: "pixel",    name: "PIXEL",    icon: "🎨", description: "Imágenes" },
+  { id: "nexus",    name: "NEXUS",    icon: "📡", description: "Redes Sociales" },
+  { id: "forge",    name: "FORGE",    icon: "📊", description: "Datos & Excel" },
+  { id: "sage",     name: "SAGE",     icon: "🎓", description: "Educación" },
+  { id: "vector",   name: "VECTOR",   icon: "💼", description: "Ventas & CRM" },
+  { id: "chronos",  name: "CHRONOS",  icon: "⏱️", description: "Productividad" },
+  { id: "politeia", name: "POLITEIA", icon: "🏛️", description: "Política" },
 ];
 
 interface AgentSelectorProps {

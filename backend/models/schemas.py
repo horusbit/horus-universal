@@ -13,6 +13,12 @@ class AgentType(str, Enum):
     ECHO = "echo"
     DARWIN = "darwin"
     PIXEL = "pixel"
+    NEXUS = "nexus"
+    FORGE = "forge"
+    SAGE = "sage"
+    VECTOR = "vector"
+    CHRONOS = "chronos"
+    POLITEIA = "politeia"
 
 
 class ModelTier(str, Enum):
