@@ -42,6 +42,30 @@ ROUTING_RULES = [
         r'\b(podcast|audio|voz|voice|script|guión|locutor|narración|narration|tts|text.to.speech|subtítulo|subtitle|transcribe|transcripción|grabación|recording|video script|youtube script)\b',
         r'\b(escribe un guión|crea un podcast|para grabar|para audio)\b',
     ]),
+    (AgentType.NEXUS, [
+        r'\b(redes sociales|social media|instagram|tiktok|twitter|x\.com|linkedin|youtube|facebook|threads|pinterest|reels|stories|viral|trending|hashtag|influencer|growth hacking|community manager|engagement|followers|contenido viral)\b',
+        r'\b(estrategia de redes|calendario de contenido|crecer en|aumentar seguidores|post para|publicar en)\b',
+    ]),
+    (AgentType.FORGE, [
+        r'\b(excel|google sheets|spreadsheet|hoja de cálculo|tableau|power bi|looker|pandas|numpy|dataframe|pivot|vlookup|buscarv|fórmula|formula|dashboard de datos|gráfico|chart|sql query|business intelligence|bi|limpieza de datos)\b',
+        r'\b(analiza estos datos|crea un dashboard|dame una fórmula|analiza el excel|crea una tabla dinámica|visualiza los datos)\b',
+    ]),
+    (AgentType.SAGE, [
+        r'\b(explícame|explica|enseña|aprendo|aprender|entender|tutorial|curso|lección|clase|examen|tarea|homework|estudiar|matemáticas|física|química|biología|historia|geografía|filosofía|gramática|idioma|aprendizaje)\b',
+        r'\b(cómo funciona|qué es exactamente|no entiendo|ayúdame a entender|explícalo simple|para principiantes|conceptos básicos)\b',
+    ]),
+    (AgentType.VECTOR, [
+        r'\b(ventas|sales|crm|pipeline|prospecto|prospect|cliente potencial|lead|cold call|cold email|objeción|cierre|negociación|deal|hubspot|salesforce|pipedrive|comisión|quota|upsell|cross.sell|funnel de ventas|conversión de ventas)\b',
+        r'\b(script de ventas|cómo vender|manejo de objeciones|cerrar un deal|email de ventas|propuesta comercial)\b',
+    ]),
+    (AgentType.CHRONOS, [
+        r'\b(productividad|organización|planificación|gestión del tiempo|time management|agenda|calendario|prioridades|gtd|pomodoro|okr|hábitos|rutina|automatización|workflow|notion|trello|asana|monday|clickup|todoist|burnout|delegación)\b',
+        r'\b(organiza mi semana|planifica mi día|crea un plan|gestiona mi tiempo|cómo ser más productivo|sistema de trabajo)\b',
+    ]),
+    (AgentType.POLITEIA, [
+        r'\b(política|político|gobierno|gobernanza|campaña electoral|elecciones|candidato|partido político|congreso|parlamento|senado|presidente|alcalde|legislación|ley|decreto|política pública|votantes|electorado|geopolítica|diplomacia)\b',
+        r'\b(estrategia política|comunicación política|discurso político|plan de gobierno|política exterior|reforma política)\b',
+    ]),
 ]
 
 
@@ -80,14 +104,20 @@ def get_routing_message(detected_agent: AgentType, original_agent: AgentType) ->
     """Retorna mensaje de routing si se cambió de agente."""
     if detected_agent != original_agent and original_agent == AgentType.ATLAS:
         agent_names = {
-            AgentType.CIPHER: "CIPHER ⚡",
-            AgentType.NOVA: "NOVA ✨",
-            AgentType.LEXIS: "LEXIS ⚖️",
-            AgentType.ORACLE: "ORACLE 🔮",
-            AgentType.HERMES: "HERMES 🌍",
-            AgentType.ECHO: "ECHO 🎙️",
-            AgentType.DARWIN: "DARWIN 🔬",
-            AgentType.PIXEL: "PIXEL 🎨",
+            AgentType.CIPHER:   "CIPHER ⚡",
+            AgentType.NOVA:     "NOVA ✨",
+            AgentType.LEXIS:    "LEXIS ⚖️",
+            AgentType.ORACLE:   "ORACLE 🔮",
+            AgentType.HERMES:   "HERMES 🌍",
+            AgentType.ECHO:     "ECHO 🎙️",
+            AgentType.DARWIN:   "DARWIN 🔬",
+            AgentType.PIXEL:    "PIXEL 🎨",
+            AgentType.NEXUS:    "NEXUS 📡",
+            AgentType.FORGE:    "FORGE 📊",
+            AgentType.SAGE:     "SAGE 🎓",
+            AgentType.VECTOR:   "VECTOR 💼",
+            AgentType.CHRONOS:  "CHRONOS ⏱️",
+            AgentType.POLITEIA: "POLITEIA 🏛️",
         }
         name = agent_names.get(detected_agent, detected_agent.value.upper())
         return f"*Activando agente {name}...*\n\n"

@@ -3,6 +3,7 @@ Usage & Plan Service — HORUS Universal
 Controla límites de mensajes por plan y usuario.
 Admin email: horuseict@gmail.com → ilimitado siempre
 """
+from datetime import date
 from config import settings
 from models.schemas import Message
 import logging
@@ -54,10 +55,11 @@ async def get_daily_usage(user_id: str) -> int:
     """Devuelve los mensajes usados hoy."""
     try:
         client = _get_client()
+        today = date.today().isoformat()
         result = client.table("daily_usage") \
             .select("message_count") \
             .eq("user_id", user_id) \
-            .eq("date", "now()::date") \
+            .eq("date", today) \
             .execute()
         if result.data:
             return result.data[0]["message_count"]

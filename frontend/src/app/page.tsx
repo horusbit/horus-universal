@@ -269,12 +269,15 @@ export default function HorusChat() {
 
 // ── Pantalla de bienvenida ──────────────────────────────────────────────────
 const QUICK_ACTIONS = [
-  { agent: "cipher" as AgentType, icon: "⚡", text: "Crea una API REST con FastAPI y autenticación JWT" },
-  { agent: "nova"   as AgentType, icon: "✨", text: "Escribe un post viral para LinkedIn sobre tendencias de IA" },
-  { agent: "oracle" as AgentType, icon: "🔮", text: "Analiza el modelo de negocio de una SaaS B2B" },
-  { agent: "darwin" as AgentType, icon: "🔬", text: "¿Cuáles son los mejores modelos de IA gratuitos en 2025?" },
-  { agent: "hermes" as AgentType, icon: "🌍", text: "Traduce al inglés manteniendo tono formal y profesional" },
-  { agent: "pixel"  as AgentType, icon: "🎨", text: "Crea un prompt para Midjourney de un logo futurista" },
+  { agent: "cipher"   as AgentType, icon: "⚡", text: "Crea una API REST con FastAPI y autenticación JWT" },
+  { agent: "nova"     as AgentType, icon: "✨", text: "Escribe un post viral para LinkedIn sobre tendencias de IA" },
+  { agent: "oracle"   as AgentType, icon: "🔮", text: "Analiza el modelo de negocio de una SaaS B2B" },
+  { agent: "nexus"    as AgentType, icon: "📡", text: "Crea un calendario de contenido para Instagram y TikTok" },
+  { agent: "vector"   as AgentType, icon: "💼", text: "Script de ventas para superar la objeción de precio" },
+  { agent: "forge"    as AgentType, icon: "📊", text: "Analiza estos datos de ventas con Python y Pandas" },
+  { agent: "chronos"  as AgentType, icon: "⏱️", text: "Diseña una rutina de productividad para emprendedores" },
+  { agent: "politeia" as AgentType, icon: "🏛️", text: "Estrategia de comunicación política para campaña electoral" },
+  { agent: "darwin"   as AgentType, icon: "🔬", text: "¿Cuáles son los mejores modelos de IA gratuitos en 2025?" },
 ];
 
 function WelcomeScreen({
@@ -289,7 +292,7 @@ function WelcomeScreen({
         <div className="text-5xl mb-4">👁</div>
         <h2 className="text-2xl font-bold text-[#e2e8f0] mb-2">HORUS Universal</h2>
         <p className="text-[#64748b] text-sm max-w-md">
-          9 agentes especializados, múltiples modelos de IA, arquitectura de costo cero.
+          15 agentes especializados, múltiples modelos de IA, arquitectura de costo cero.
           Selecciona un agente arriba o empieza con una acción rápida.
         </p>
       </div>
