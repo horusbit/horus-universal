@@ -82,21 +82,6 @@ export default function HorusChat() {
     await setConversationTitle(convId, title);
   }, []);
 
-  const handleRegenerate = useCallback(async () => {
-    if (isLoading || messages.length < 2) return;
-    let lastUserMsg = "";
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === "user") {
-        lastUserMsg = messages[i].content;
-        break;
-      }
-    }
-    if (!lastUserMsg) return;
-    // Quitar el último mensaje asistente y re-enviar
-    setMessages(prev => prev.slice(0, -1));
-    await handleSend(lastUserMsg);
-  }, [isLoading, messages, handleSend]);
-
   const exportConversation = useCallback(() => {
     if (!messages.length) return;
     const lines = messages.map(m => {
@@ -171,6 +156,20 @@ export default function HorusChat() {
       setIsLoading(false);
     }
   }, [isLoading, selectedAgent, conversationId, messages, autoSetTitle, user]);
+
+  const handleRegenerate = useCallback(async () => {
+    if (isLoading || messages.length < 2) return;
+    let lastUserMsg = "";
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        lastUserMsg = messages[i].content;
+        break;
+      }
+    }
+    if (!lastUserMsg) return;
+    setMessages(prev => prev.slice(0, -1));
+    await handleSend(lastUserMsg);
+  }, [isLoading, messages, handleSend]);
 
   // ── Returns condicionales DESPUÉS de todos los hooks ──
   if (authLoading) {
