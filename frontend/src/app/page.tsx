@@ -82,6 +82,22 @@ export default function HorusChat() {
     await setConversationTitle(convId, title);
   }, []);
 
+  const exportConversation = useCallback(() => {
+    if (!messages.length) return;
+    const lines = messages.map(m => {
+      const role = m.role === "user" ? "👤 Tú" : `🤖 ${(m.agent || "ATLAS").toUpperCase()}`;
+      return `## ${role}\n\n${m.content}`;
+    });
+    const md = `# Conversación HORUS Universal\n_Exportado: ${new Date().toLocaleString("es-ES")}_\n\n---\n\n${lines.join("\n\n---\n\n")}`;
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `horus-chat-${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [messages]);
+
   const handleSend = useCallback(async (text: string) => {
     if (isLoading) return;
 
@@ -218,6 +234,16 @@ export default function HorusChat() {
           {userPlan?.plan === "pro" && (
             <span className="text-xs text-purple-400 font-medium flex-shrink-0">⚡ Pro</span>
           )}
+          {/* Admin link — solo para horuseict@gmail.com */}
+          {user?.email === "horuseict@gmail.com" && (
+            <a
+              href="/admin"
+              className="text-xs text-[#64748b] hover:text-red-400 transition-colors flex-shrink-0"
+              title="Panel de Admin"
+            >
+              🛡️
+            </a>
+          )}
           {/* Logout */}
           <button
             onClick={signOut}
@@ -263,6 +289,17 @@ export default function HorusChat() {
             isLoading={isLoading}
             placeholder={`Mensaje para ${selectedAgent.toUpperCase()}... (Enter para enviar)`}
           />
+          {messages.length > 0 && (
+            <div className="flex justify-end mt-1.5">
+              <button
+                onClick={exportConversation}
+                className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors flex items-center gap-1"
+                title="Descargar conversación como Markdown"
+              >
+                ⬇ exportar chat
+              </button>
+            </div>
+          )}
           <p className="text-center text-xs text-[#1e1e2e] mt-2 select-none">
             OpenRouter · Gemini · Llama · DeepSeek · Arquitectura costo cero
           </p>

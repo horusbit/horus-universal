@@ -10,6 +10,7 @@ from config import settings
 from routers import chat_router, agents_router, conversations_router, voice_router
 from routers.billing import router as billing_router
 from routers.files import router as files_router
+from routers.admin import router as admin_router
 import logging
 
 logging.basicConfig(
@@ -24,7 +25,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} iniciando...")
     logger.info(f"📡 Modelo primario: {settings.MODEL_PRIMARY}")
     logger.info(f"🔄 Fallbacks: {settings.MODEL_FALLBACKS}")
-    logger.info(f"🤖 Agentes: ATLAS CIPHER NOVA LEXIS ORACLE HERMES ECHO DARWIN PIXEL")
+    logger.info(f"🤖 Agentes (16): ATLAS CIPHER NOVA LEXIS ORACLE HERMES ECHO DARWIN PIXEL NEXUS FORGE SAGE VECTOR CHRONOS POLITEIA EDUCRAFT")
     logger.info(f"🎙️ Voz: {'GROQ Whisper + ElevenLabs' if settings.voice_enabled else 'No configurado (añade GROQ_API_KEY / ELEVENLABS_API_KEY)'}")
     logger.info(f"🌐 CORS: {settings.cors_origins_list}")
     yield
@@ -33,7 +34,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="HORUS Universal API",
-    description="Orquestador Personal de IA Multi-Modelo — 9 agentes especializados",
+    description="Orquestador Personal de IA Multi-Modelo — 16 agentes especializados",
     version=settings.APP_VERSION,
     lifespan=lifespan,
     docs_url="/docs",
@@ -54,6 +55,7 @@ app.include_router(conversations_router, prefix="/api/v1")
 app.include_router(voice_router, prefix="/api/v1")
 app.include_router(billing_router, prefix="/api/v1")
 app.include_router(files_router, prefix="/api/v1")
+app.include_router(admin_router, prefix="/api/v1")
 
 
 @app.get("/")
@@ -62,7 +64,7 @@ async def root():
         "system": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "status": "operational",
-        "agents": 9,
+        "agents": 16,
         "model_primary": settings.MODEL_PRIMARY,
         "docs": "/docs",
     }

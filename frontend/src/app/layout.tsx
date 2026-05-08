@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "HORUS Universal",
-  description: "Tu orquestador personal de IA multi-modelo — 9 agentes especializados",
+  description: "Tu orquestador personal de IA multi-modelo — 16 agentes especializados",
   manifest: "/manifest.json",
   icons: {
     icon: [
