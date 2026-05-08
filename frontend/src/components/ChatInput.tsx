@@ -3,6 +3,19 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { transcribeAudio } from "@/lib/api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+async function extractFile(file: File): Promise<{ text: string; filename: string; type: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const r = await fetch(`${API_URL}/api/v1/files/extract`, { method: "POST", body: formData });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.detail || "Error procesando archivo");
+  }
+  return r.json();
+}
+
 interface ChatInputProps {
   onSend: (text: string) => void;
   isLoading: boolean;
@@ -16,8 +29,11 @@ export default function ChatInput({ onSend, isLoading, placeholder }: ChatInputP
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [voiceError, setVoiceError] = useState<string>("");
   const [recordingTime, setRecordingTime] = useState(0);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<{ name: string; type: string } | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -44,11 +60,30 @@ export default function ChatInput({ onSend, isLoading, placeholder }: ChatInputP
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileLoading(true);
+    try {
+      const result = await extractFile(file);
+      const prefix = `[Archivo: ${result.filename}]\n${result.text}\n\n`;
+      setText(prev => prefix + prev);
+      setAttachedFile({ name: result.filename, type: result.type });
+      textareaRef.current?.focus();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Error procesando archivo");
+    } finally {
+      setFileLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
     onSend(trimmed);
     setText("");
+    setAttachedFile(null);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
@@ -189,6 +224,21 @@ export default function ChatInput({ onSend, isLoading, placeholder }: ChatInputP
 
   return (
     <div className="space-y-1">
+      {/* Archivo adjunto */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      {attachedFile && (
+        <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+          <span>📎</span>
+          <span className="truncate">{attachedFile.name}</span>
+          <button onClick={() => { setAttachedFile(null); setText(""); }} className="ml-auto hover:text-red-400">✕</button>
+        </div>
+      )}
       {/* Error / estado de voz */}
       {(voiceState === "recording" || voiceState === "transcribing" || voiceError) && (
         <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg
@@ -230,6 +280,18 @@ export default function ChatInput({ onSend, isLoading, placeholder }: ChatInputP
             placeholder:text-[#475569] disabled:opacity-50 py-1 max-h-40"
         />
         <div className="flex items-center gap-1 flex-shrink-0 pb-1">
+          {/* Botón adjuntar archivo */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={fileLoading || isLoading}
+            title="Adjuntar PDF, DOCX, TXT o imagen"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all
+              text-[#64748b] hover:text-[#e2e8f0] hover:bg-[#1e1e2e] disabled:opacity-50"
+          >
+            {fileLoading ? (
+              <span className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+            ) : "📎"}
+          </button>
           {/* Botón de micrófono */}
           <button
             onClick={toggleVoice}

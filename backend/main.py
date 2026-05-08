@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from config import settings
 from routers import chat_router, agents_router, conversations_router, voice_router
 from routers.billing import router as billing_router
+from routers.files import router as files_router
 import logging
 
 logging.basicConfig(
@@ -52,6 +53,7 @@ app.include_router(agents_router, prefix="/api/v1")
 app.include_router(conversations_router, prefix="/api/v1")
 app.include_router(voice_router, prefix="/api/v1")
 app.include_router(billing_router, prefix="/api/v1")
+app.include_router(files_router, prefix="/api/v1")
 
 
 @app.get("/")
