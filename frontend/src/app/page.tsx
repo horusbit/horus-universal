@@ -25,6 +25,8 @@ const now = () => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minu
 export default function HorusChat() {
   const router = useRouter();
   const { user, loading: authLoading, signOut } = useAuth();
+
+  // ── Todos los hooks ANTES de cualquier return condicional ──
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<AgentType>("atlas");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,6 +34,7 @@ export default function HorusChat() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarRefresh, setSidebarRefresh] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const titleSetRef = useRef(false);
 
   // Auth guard
   useEffect(() => {
@@ -39,20 +42,6 @@ export default function HorusChat() {
       router.push("/login");
     }
   }, [user, authLoading, router]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl mb-4 animate-pulse">👁</div>
-          <p className="text-[#64748b] text-sm">Cargando HORUS...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
-  const titleSetRef = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,7 +73,7 @@ export default function HorusChat() {
     await setConversationTitle(convId, title);
   }, []);
 
-  const handleSend = async (text: string) => {
+  const handleSend = useCallback(async (text: string) => {
     if (isLoading) return;
 
     const userMsg: Message = {
@@ -106,7 +95,6 @@ export default function HorusChat() {
     setMessages(prev => [...prev, userMsg, assistantMsg]);
     setIsLoading(true);
 
-    // Auto-set title con el primer mensaje
     autoSetTitle(conversationId, text);
 
     try {
@@ -126,10 +114,9 @@ export default function HorusChat() {
         );
       }
 
-      // Refrescar sidebar después de cada mensaje
       setSidebarRefresh(r => r + 1);
 
-    } catch (error) {
+    } catch {
       setMessages(prev =>
         prev.map(m =>
           m.id === assistantMsgId
@@ -140,7 +127,21 @@ export default function HorusChat() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, selectedAgent, conversationId, messages, autoSetTitle]);
+
+  // ── Returns condicionales DESPUÉS de todos los hooks ──
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4 animate-pulse">👁</div>
+          <p className="text-[#64748b] text-sm">Cargando HORUS...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   return (
     <div className="flex h-screen bg-[#0a0a0f] overflow-hidden">
@@ -180,6 +181,14 @@ export default function HorusChat() {
               px-3 py-1.5 rounded-lg border border-[#1e1e2e] hover:border-indigo-500/50 transition-colors"
           >
             <span>✏️</span> Nuevo
+          </button>
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-red-400
+              px-3 py-1.5 rounded-lg border border-[#1e1e2e] hover:border-red-500/50 transition-colors"
+            title="Cerrar sesión"
+          >
+            ⏏
           </button>
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
