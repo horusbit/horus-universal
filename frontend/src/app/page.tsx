@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import AgentSelector from "@/components/AgentSelector";
 import MessageBubble from "@/components/MessageBubble";
 import ChatInput from "@/components/ChatInput";
 import Sidebar from "@/components/Sidebar";
+import { useAuth } from "@/context/AuthContext";
 import {
   streamMessage, AgentType, ChatMessage,
   getConversationMessages, setConversationTitle,
@@ -21,6 +23,8 @@ interface Message extends ChatMessage {
 const now = () => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 
 export default function HorusChat() {
+  const router = useRouter();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<AgentType>("atlas");
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +32,26 @@ export default function HorusChat() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarRefresh, setSidebarRefresh] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auth guard
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4 animate-pulse">👁</div>
+          <p className="text-[#64748b] text-sm">Cargando HORUS...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
   const titleSetRef = useRef(false);
 
   useEffect(() => {

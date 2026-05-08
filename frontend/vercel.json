@@ -4,6 +4,6 @@
   "outputDirectory": ".next",
   "installCommand": "npm install --legacy-peer-deps",
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://horus-backend.onrender.com"
+    "NEXT_PUBLIC_API_URL": "https://horus-backend-5fkw.onrender.com"
   }
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,19 +17,9 @@ export const metadata: Metadata = {
     apple: "/icon-192.png",
     shortcut: "/icon-192.png",
   },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "HORUS",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  openGraph: {
-    title: "HORUS Universal",
-    description: "Orquestador Personal de IA Multi-Modelo",
-    type: "website",
-  },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "HORUS" },
+  formatDetection: { telephone: false },
+  openGraph: { title: "HORUS Universal", description: "Orquestador Personal de IA Multi-Modelo", type: "website" },
 };
 
 export const viewport: Viewport = {
@@ -40,40 +31,28 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className="dark">
       <head>
-        {/* Prevenir zoom en iOS al hacer tap en inputs */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="HORUS" />
       </head>
       <body className={`${inter.className} bg-[#0a0a0f] text-[#e2e8f0] min-h-screen`}>
-        {children}
-        {/* Registro del Service Worker */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(function(reg) {
-                      console.log('[HORUS] Service Worker registrado:', reg.scope);
-                    })
-                    .catch(function(err) {
-                      console.warn('[HORUS] Service Worker no disponible:', err);
-                    });
-                });
-              }
-            `,
-          }}
-        />
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                .then(reg => console.log('[HORUS] SW:', reg.scope))
+                .catch(err => console.warn('[HORUS] SW:', err));
+            });
+          }
+        `}} />
       </body>
     </html>
   );

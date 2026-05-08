@@ -21,6 +21,14 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Env files (NEVER commit these)
+.env
+.env.local
+.env*.local
+.env.production
+frontend/.env.local
+backend/.env
+
 # Local
 *.bat
 DIAGNOSTICO*
