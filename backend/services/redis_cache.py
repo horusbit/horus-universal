@@ -26,7 +26,6 @@ class RedisCache:
                     url=settings.UPSTASH_REDIS_REST_URL,
                     token=settings.UPSTASH_REDIS_REST_TOKEN,
                 )
-                # Test connection
                 self._client.ping()
                 logger.info("[Redis] Upstash conectado correctamente")
             except Exception as e:
@@ -92,7 +91,6 @@ class RedisCache:
             if client:
                 for k in keys:
                     client.delete(k)
-                # Eliminar del índice
                 client.lrem("conv:index", 0, conversation_id)
             else:
                 for k in keys:
@@ -137,7 +135,6 @@ class RedisCache:
         try:
             client = self._get_client()
             if client:
-                # Solo agregar si no existe
                 existing = client.lrange("conv:index", 0, -1)
                 if conversation_id not in (existing or []):
                     client.lpush("conv:index", conversation_id)
@@ -151,7 +148,7 @@ class RedisCache:
             logger.warning(f"[Redis] _register_conversation error: {e}")
 
     async def register_user_conversation(self, user_id: str, conversation_id: str):
-        """Registra la conversación bajo el índice del usuario (fallback cuando Supabase no responde)."""
+        """Registra la conversación bajo el índice del usuario."""
         try:
             key = f"user:{user_id}:conv_ids"
             client = self._get_client()
@@ -174,4 +171,61 @@ class RedisCache:
             key = f"user:{user_id}:conv_ids"
             client = self._get_client()
             if client:
-                ids = client.lrange(key, 0, 49) or
+                ids = client.lrange(key, 0, 49) or []
+            else:
+                ids = self._mem_get(key) or []
+
+            result = []
+            for conv_id in ids:
+                messages = await self.get_conversation(conv_id)
+                if not messages:
+                    continue
+                title = await self.get_conversation_title(conv_id) or "Nueva conversación"
+                last_user_msg = next(
+                    (m.content[:80] for m in reversed(messages) if m.role == "user"), ""
+                )
+                result.append({
+                    "id": conv_id,
+                    "title": title,
+                    "message_count": len(messages),
+                    "last_message": last_user_msg,
+                    "agent": "atlas",
+                })
+            return result
+        except Exception as e:
+            logger.error(f"[Redis] list_user_conversations error: {e}")
+            return []
+
+    async def list_conversations(self) -> list:
+        """Lista todas las conversaciones con resumen."""
+        try:
+            client = self._get_client()
+            if client:
+                ids = client.lrange("conv:index", 0, 49) or []
+            else:
+                ids = self._mem_get("conv:index") or []
+
+            result = []
+            for conv_id in ids:
+                messages = await self.get_conversation(conv_id)
+                if not messages:
+                    continue
+                title = await self.get_conversation_title(conv_id) or "Nueva conversación"
+                last_user_msg = next(
+                    (m.content[:80] for m in reversed(messages) if m.role == "user"),
+                    ""
+                )
+                result.append({
+                    "id": conv_id,
+                    "title": title,
+                    "message_count": len(messages),
+                    "last_message": last_user_msg,
+                })
+            return result
+        except Exception as e:
+            logger.error(f"[Redis] list_conversations error: {e}")
+            return []
+
+
+# Instancia global
+cache = RedisCache()
