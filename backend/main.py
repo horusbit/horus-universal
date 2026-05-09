@@ -15,6 +15,7 @@ from routers.images import router as images_router
 from routers.telegram import router as telegram_router
 from routers.share import router as share_router
 from routers.custom_agents import router as custom_agents_router
+from routers.upload import router as upload_router
 import logging
 
 logging.basicConfig(
@@ -64,6 +65,7 @@ app.include_router(images_router, prefix="/api/v1")
 app.include_router(telegram_router, prefix="/api/v1")
 app.include_router(share_router, prefix="/api/v1")
 app.include_router(custom_agents_router, prefix="/api/v1")
+app.include_router(upload_router)
 
 
 @app.get("/")

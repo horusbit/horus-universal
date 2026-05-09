@@ -8,7 +8,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 async function extractFile(file: File): Promise<{ text: string; filename: string; type: string }> {
   const formData = new FormData();
   formData.append("file", file);
-  const r = await fetch(`${API_URL}/api/v1/files/extract`, { method: "POST", body: formData });
+  const r = await fetch(`${API_URL}/api/v1/upload/`, { method: "POST", body: formData });
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
     throw new Error(err.detail || "Error procesando archivo");
@@ -68,8 +68,8 @@ export default function ChatInput({ onSend, isLoading, placeholder, inputRef }: 
     setFileLoading(true);
     try {
       const result = await extractFile(file);
-      const prefix = `[Archivo: ${result.filename}]\n${result.text}\n\n`;
-      setText(prev => prefix + prev);
+      const prefix = result.context || `[Archivo: ${result.filename}]\n`;
+      setText(prev => prefix + (prev || "Analiza este archivo y respóndeme sobre su contenido."));
       setAttachedFile({ name: result.filename, type: result.type });
       textareaRef.current?.focus();
     } catch (err: unknown) {
@@ -230,7 +230,7 @@ export default function ChatInput({ onSend, isLoading, placeholder, inputRef }: 
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp"
+        accept=".pdf,.docx,.xlsx,.csv,.txt,.md,.jpg,.jpeg,.png,.webp"
         onChange={handleFileSelect}
         className="hidden"
       />
