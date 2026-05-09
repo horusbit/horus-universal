@@ -410,9 +410,4 @@ function CopyCodeButton({ code }: { code: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }}
-      className="text-xs text-[#64748b] hover:text-white transition-colors"
-    >
-      {copied ? "✓ copiado" : "copiar"}
-    </button>
-  );
-}
+      className="text-xs text-[#64748b] h

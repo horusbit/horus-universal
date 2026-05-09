@@ -94,6 +94,4 @@ async def server_error_handler(request, exc):
     return JSONResponse(status_code=500, content={"error": "Error interno. Intenta de nuevo."})
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG, log_level="info")
+if __name__ == "__

@@ -94,21 +94,4 @@ def get_routing_message(detected_agent: AgentType, original_agent) -> str | None
     if detected_agent != original_agent and original_agent == AgentType.ATLAS:
         agent_names = {
             AgentType.CIPHER:   "CIPHER ⚡",
-            AgentType.NOVA:     "NOVA ✨",
-            AgentType.LEXIS:    "LEXIS ⚖️",
-            AgentType.ORACLE:   "ORACLE 🔮",
-            AgentType.HERMES:   "HERMES 🌍",
-            AgentType.ECHO:     "ECHO 🎙️",
-            AgentType.DARWIN:   "DARWIN 🔬",
-            AgentType.PIXEL:    "PIXEL 🎨",
-            AgentType.NEXUS:    "NEXUS 📡",
-            AgentType.FORGE:    "FORGE 📊",
-            AgentType.SAGE:     "SAGE 🎓",
-            AgentType.VECTOR:   "VECTOR 💼",
-            AgentType.CHRONOS:  "CHRONOS ⏱️",
-            AgentType.POLITEIA: "POLITEIA 🏛️",
-            AgentType.EDUCRAFT: "EDUCRAFT 🏫",
-        }
-        name = agent_names.get(detected_agent, detected_agent.value.upper())
-        return f"*Activando {name}...*\n\n"
-    return None
+ 

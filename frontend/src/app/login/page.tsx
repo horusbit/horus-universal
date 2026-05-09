@@ -121,13 +121,4 @@ export default function LoginPage() {
               <Link href="/register" className="text-indigo-400 hover:text-indigo-300 transition-colors">
                 Regístrate gratis
               </Link>
-            </span>
-            <Link href="/reset-password" className="text-[#475569] hover:text-indigo-400 transition-colors">
-              ¿Olvidaste tu contraseña?
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+          
