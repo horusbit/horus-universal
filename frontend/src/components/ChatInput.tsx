@@ -5,7 +5,7 @@ import { transcribeAudio } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-async function extractFile(file: File): Promise<{ text: string; filename: string; type: string }> {
+async function extractFile(file: File): Promise<{ text?: string; context?: string; filename: string; type: string }> {
   const formData = new FormData();
   formData.append("file", file);
   const r = await fetch(`${API_URL}/api/v1/upload/`, { method: "POST", body: formData });
