@@ -32,7 +32,6 @@ async def chat(
     user=Depends(get_optional_user),
 ):
     """Endpoint de chat sin streaming — con auto-routing y límites de plan."""
-    # Verificar límite de uso
     user_email = getattr(user, "email", "") if user else ""
     usage = await check_usage_limit(user, user_email)
     if not usage["allowed"]:
@@ -53,14 +52,12 @@ async def chat(
     if request.history:
         history = request.history
 
-    # Cargar y extraer memoria del usuario
     memory_context = ""
     if user:
         memory = await get_user_memory(user.id)
         memory_context = build_memory_context(memory)
         await extract_and_save_facts(user.id, request.message)
 
-    # Detectar si es un agente personalizado (UUID) o un agente built-in
     agent_id_str = str(request.agent) if request.agent else ""
     custom_agent_data = None
     if UUID_RE.match(agent_id_str):
@@ -68,7 +65,6 @@ async def chat(
 
     try:
         if custom_agent_data:
-            # Agente personalizado
             dynamic_agent = DynamicAgent(
                 name=custom_agent_data["name"],
                 emoji=custom_agent_data["emoji"],
@@ -84,7 +80,6 @@ async def chat(
             routing_prefix = ""
             effective_agent_value = agent_id_str
         else:
-            # Agente built-in
             effective_agent = detect_agent(request.message, request.agent)
             agent_class = get_agent(effective_agent)
             routing_prefix = get_routing_message(effective_agent, request.agent) or ""
@@ -132,7 +127,6 @@ async def chat_stream_endpoint(
     user=Depends(get_optional_user),
 ):
     """Endpoint de chat con streaming SSE — con auto-routing y límites de plan."""
-    # Verificar límite de uso
     user_email = getattr(user, "email", "") if user else ""
     usage = await check_usage_limit(user, user_email)
     if not usage["allowed"]:
@@ -155,7 +149,6 @@ async def chat_stream_endpoint(
     user_msg = Message(role="user", content=request.message)
     await cache.append_message(conversation_id, user_msg)
 
-    # Cargar memoria + persistir mensaje de usuario
     memory_context = ""
     agent_id_str = str(request.agent) if request.agent else ""
     custom_agent_data = None
@@ -173,7 +166,6 @@ async def chat_stream_endpoint(
         effective_agent_value = effective_agent.value
         routing_prefix = get_routing_message(effective_agent, request.agent)
 
-    # Búsqueda web automática si el mensaje lo requiere
     web_context = ""
     if needs_web_search(request.message):
         search_results = await search_web(request.message)
@@ -188,10 +180,8 @@ async def chat_stream_endpoint(
         await ensure_conversation_exists(conversation_id, user.id, effective_agent_value)
         await save_message(conversation_id, user_msg)
         await increment_usage(user.id)
-        # Registrar en Redis por usuario (fallback si Supabase falla)
         await cache.register_user_conversation(user.id, conversation_id)
 
-    # Combinar contextos: memoria + web search
     if web_context:
         memory_context = (web_context + "\n\n" + memory_context).strip()
 
@@ -244,4 +234,15 @@ async def chat_stream_endpoint(
 
     return StreamingResponse(
         generate(),
-        media_type="tex
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.get("/usage")
+async def get_usage(user=Depends(get_optional_user)):
+    """Devuelve el uso actual del usuario."""
+    if not user:
+        return {"plan": "anonymous", "used": 0, "limit": None, "allowed": True}
+    user_email = getattr(user, "email", "")
+    return await check_usage_limit(user, user_email)
