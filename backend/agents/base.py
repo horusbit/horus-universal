@@ -39,7 +39,7 @@ class BaseAgent(ABC):
         """
         system_content = cls.system_prompt
         if extra_system_context:
-            system_content = system_content + extra_system_context
+            system_content = system_content + "\n\n" + extra_system_context
         messages = [Message(role="system", content=system_content)]
         messages.extend(history[-10:])  # Últimos 10 mensajes del historial
         messages.append(Message(role="user", content=user_message))

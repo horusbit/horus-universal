@@ -48,6 +48,11 @@ async def search_web(query: str, max_results: int = 6) -> List[Dict]:
     if results:
         return results
 
+    # 4. HTML scraping fallback (no API key, works anywhere)
+    results = await _search_html_scrape(query)
+    if results:
+        return results
+
     logger.warning(f"[WebSearch] Sin resultados para: {query[:60]}")
     return []
 
@@ -163,6 +168,62 @@ async def _search_ddg_instant(query: str) -> List[Dict]:
         return results
     except Exception as e:
         logger.warning(f"[DDG Instant] Error: {e}")
+        return []
+
+
+async def _search_html_scrape(query: str) -> List[Dict]:
+    """Fallback final: scraping directo de DuckDuckGo HTML. Sin API key."""
+    try:
+        import aiohttp
+        from html.parser import HTMLParser
+
+        class DDGParser(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.results = []
+                self._in_result = False
+                self._current = {}
+                self._capture = None
+
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if tag == 'a' and 'result__a' in attrs.get('class', ''):
+                    self._current = {'href': attrs.get('href', '')}
+                    self._capture = 'title'
+                elif tag == 'a' and 'result__snippet' in attrs.get('class', ''):
+                    self._capture = 'body'
+
+            def handle_data(self, data):
+                if self._capture and data.strip():
+                    self._current[self._capture] = (self._current.get(self._capture, '') + data).strip()
+
+            def handle_endtag(self, tag):
+                if tag == 'a' and self._capture == 'title' and self._current.get('title'):
+                    self.results.append(dict(self._current))
+                    self._capture = None
+                elif tag == 'a' and self._capture == 'body':
+                    self._capture = None
+
+        encoded = urllib.parse.quote(query)
+        url = f"https://html.duckduckgo.com/html/?q={encoded}&kl=es-419"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36",
+            "Accept-Language": "es-419,es;q=0.9",
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                if resp.status != 200:
+                    return []
+                html = await resp.text()
+
+        parser = DDGParser()
+        parser.feed(html)
+        results = [r for r in parser.results if r.get('title') and r.get('href')][:6]
+        if results:
+            logger.info(f"[DDG Scrape] '{query[:50]}' → {len(results)} resultados")
+        return results
+    except Exception as e:
+        logger.warning(f"[DDG Scrape] Error: {e}")
         return []
 
 
