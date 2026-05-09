@@ -257,7 +257,7 @@ export default function HorusChat() {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-4 animate-pulse">{">"}</div>
+          <div className="text-4xl mb-4 animate-pulse">👁</div>
           <p className="text-[#64748b] text-sm">Cargando HORUS...</p>
         </div>
       </div>
@@ -290,14 +290,14 @@ export default function HorusChat() {
             onClick={() => setSidebarOpen(true)}
             className="text-[#64748b] hover:text-white lg:hidden text-lg"
           >
-            &#9776;
+            ☰
           </button>
           <button
             onClick={() => setSidebarOpen(s => !s)}
             className="hidden lg:flex text-[#64748b] hover:text-white text-sm px-2 py-1 rounded hover:bg-[#1e1e2e] transition-colors"
             title="Toggle sidebar"
           >
-            &#9664;
+            ◀
           </button>
           <div className="flex-1">
             <AgentSelector
@@ -311,7 +311,7 @@ export default function HorusChat() {
             className="flex items-center gap-1 text-xs text-[#64748b] hover:text-white p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-[#1e1e2e] hover:border-indigo-500/50 transition-colors flex-shrink-0"
             title="Nueva conversacion"
           >
-            <span>+</span>
+            <span>✏️</span>
             <span className="hidden sm:inline">Nuevo</span>
           </button>
           {userPlan && userPlan.plan === "free" && userPlan.limit && (
@@ -339,19 +339,19 @@ export default function HorusChat() {
                 }}
                 className="text-xs px-2 py-1 sm:px-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg transition-all whitespace-nowrap"
               >
-                Pro
+                ⚡ Pro
               </button>
             </div>
           )}
           {userPlan?.plan === "pro" && (
-            <span className="text-xs text-purple-400 font-medium flex-shrink-0">Pro</span>
+            <span className="text-xs text-purple-400 font-medium flex-shrink-0">⚡ Pro</span>
           )}
           <a
             href="/agents"
             className="text-xs text-[#64748b] hover:text-purple-400 transition-colors flex-shrink-0"
             title="Mis agentes personalizados"
           >
-            Agentes
+            🤖
           </a>
           {user?.email === "horuseict@gmail.com" && (
             <a
@@ -359,15 +359,15 @@ export default function HorusChat() {
               className="text-xs text-[#64748b] hover:text-red-400 transition-colors flex-shrink-0"
               title="Panel de Admin"
             >
-              Admin
+              🛡️
             </a>
           )}
           <button
             onClick={signOut}
             className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-red-400 p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-[#1e1e2e] hover:border-red-500/50 transition-colors flex-shrink-0"
-            title="Cerrar sesion"
+            title="Cerrar sesión"
           >
-            Salir
+            ⏏
           </button>
           <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
@@ -417,16 +417,16 @@ export default function HorusChat() {
               <button
                 onClick={exportConversation}
                 className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors"
-                title="Descargar como Markdown"
+                title="Descargar conversación como Markdown"
               >
-                Exportar .md
+                ⬇ .md
               </button>
               <button
                 onClick={exportAsPDF}
                 className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors"
-                title="Exportar como PDF"
+                title="Exportar conversación como PDF"
               >
-                Exportar PDF
+                📄 PDF
               </button>
             </div>
           )}
@@ -440,14 +440,14 @@ export default function HorusChat() {
 }
 
 const QUICK_ACTIONS = [
-  { agent: "cipher"   as AgentType, icon: "Code", text: "Crea una API REST con FastAPI y autenticacion JWT" },
-  { agent: "nova"     as AgentType, icon: "Mkt",  text: "Escribe un post viral para LinkedIn sobre tendencias de IA" },
-  { agent: "oracle"   as AgentType, icon: "Biz",  text: "Analiza el modelo de negocio de una SaaS B2B" },
-  { agent: "nexus"    as AgentType, icon: "Net",  text: "Crea un calendario de contenido para Instagram y TikTok" },
-  { agent: "vector"   as AgentType, icon: "Sale", text: "Script de ventas para superar la objecion de precio" },
-  { agent: "forge"    as AgentType, icon: "Data", text: "Analiza estos datos de ventas con Python y Pandas" },
-  { agent: "chronos"  as AgentType, icon: "Prod", text: "Disena una rutina de productividad para emprendedores" },
-  { agent: "darwin"   as AgentType, icon: "Res",  text: "Cuales son los mejores modelos de IA gratuitos en 2025?" },
+  { agent: "cipher"   as AgentType, icon: "⚡", text: "Crea una API REST con FastAPI y autenticación JWT" },
+  { agent: "nova"     as AgentType, icon: "✨", text: "Escribe un post viral para LinkedIn sobre tendencias de IA" },
+  { agent: "oracle"   as AgentType, icon: "🔮", text: "Analiza el modelo de negocio de una SaaS B2B" },
+  { agent: "nexus"    as AgentType, icon: "📡", text: "Crea un calendario de contenido para Instagram y TikTok" },
+  { agent: "vector"   as AgentType, icon: "💼", text: "Script de ventas para superar la objeción de precio" },
+  { agent: "forge"    as AgentType, icon: "📊", text: "Analiza estos datos de ventas con Python y Pandas" },
+  { agent: "chronos"  as AgentType, icon: "⏱️", text: "Diseña una rutina de productividad para emprendedores" },
+  { agent: "darwin"   as AgentType, icon: "🔬", text: "¿Cuáles son los mejores modelos de IA gratuitos en 2025?" },
 ];
 
 function WelcomeScreen({
@@ -459,11 +459,11 @@ function WelcomeScreen({
   return (
     <div className="flex flex-col items-center justify-center h-full gap-8 text-center px-4">
       <div>
-        <div className="text-5xl mb-4">H</div>
+        <div className="text-5xl mb-4">👁</div>
         <h2 className="text-2xl font-bold text-[#e2e8f0] mb-2">HORUS Universal</h2>
         <p className="text-[#64748b] text-sm max-w-md">
-          15 agentes especializados, multiples modelos de IA, arquitectura de costo cero.
-          Selecciona un agente arriba o empieza con una accion rapida.
+          15 agentes especializados, múltiples modelos de IA, arquitectura de costo cero.
+          Selecciona un agente arriba o empieza con una acción rápida.
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full max-w-3xl">

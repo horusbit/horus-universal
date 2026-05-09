@@ -37,7 +37,7 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     model_config = {"protected_namespaces": ()}
     message: str
-    agent: AgentType = AgentType.ATLAS
+    agent: str = "atlas"  # accepts AgentType values OR custom agent UUIDs
     conversation_id: Optional[str] = None
     history: List[Message] = Field(default_factory=list)
     stream: bool = True
@@ -47,7 +47,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
     content: str
-    agent: AgentType
+    agent: str  # AgentType value or custom agent UUID
     model_used: str
     conversation_id: str
     tokens_used: Optional[int] = None
