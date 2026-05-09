@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import AgentSelector from "@/components/AgentSelector";
 import MessageBubble from "@/components/MessageBubble";
@@ -28,7 +28,6 @@ const now = () => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minu
 
 export default function HorusChat() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, loading: authLoading, signOut } = useAuth();
 
   // ── Todos los hooks ANTES de cualquier return condicional ──
@@ -63,7 +62,7 @@ export default function HorusChat() {
       const seen = localStorage.getItem("horus_onboarding_done");
       if (!seen) setShowOnboarding(true);
       // Si viene con ?agent=UUID, pre-seleccionar agente personalizado
-      const agentParam = searchParams?.get("agent");
+      const agentParam = new URLSearchParams(window.location.search).get("agent");
       if (agentParam) setSelectedAgent(agentParam);
     }
   }, [user]);
