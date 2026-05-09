@@ -1,10 +1,12 @@
 """
-OpenRouter service — usa fallback nativo de OpenRouter (models array + route:fallback)
-Una sola llamada API; OpenRouter maneja el failover internamente en ms.
+OpenRouter service — native models array fallback.
+Una sola llamada; OpenRouter maneja el failover internamente.
+NOTA: No usar "route": "fallback" — ese campo no existe y causa HTTP 400.
+      Solo "models" array es suficiente para fallback nativo.
+Modelos actualizados a mayo 2026.
 """
 import httpx
 import json
-import asyncio
 from typing import AsyncGenerator, List, Optional
 from config import settings
 from models.schemas import Message, ModelTier
@@ -12,18 +14,21 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Lista de modelos en orden de preferencia — OpenRouter los prueba en orden automáticamente
+# Modelos gratuitos vigentes en OpenRouter (mayo 2026)
+# openrouter/free = auto-router que elige el mejor modelo free disponible
 FALLBACK_MODELS = [
-    "google/gemini-2.0-flash-exp:free",
-    "google/gemini-flash-1.5:free",
-    "google/gemma-3-27b-it:free",
+    "openrouter/free",
     "meta-llama/llama-3.3-70b-instruct:free",
-    "deepseek/deepseek-chat:free",
-    "qwen/qwen3-14b:free",
-    "google/gemma-3-12b-it:free",
-    "meta-llama/llama-3.1-8b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
-    "microsoft/phi-3-mini-128k-instruct:free",
+    "openai/gpt-oss-120b:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "openai/gpt-oss-20b:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "nvidia/nemotron-nano-9b-v2:free",
 ]
 
 MODEL_MAP = {
@@ -46,17 +51,33 @@ def _get_headers() -> dict:
 def _build_models_list(primary: Optional[str] = None) -> List[str]:
     """Construye lista de modelos con el primario al frente."""
     models = list(FALLBACK_MODELS)
-    # Añadir modelos extra del config si no están ya
     for m in settings.fallback_models_list:
         if m not in models:
             models.append(m)
-    # Poner el modelo primario al frente si se especificó
     if primary and primary in models:
         models.remove(primary)
         models.insert(0, primary)
     elif primary and primary not in models:
         models.insert(0, primary)
     return models
+
+
+def _build_payload(models_list: List[str], messages: List[Message],
+                   temperature: float, max_tokens: int, stream: bool = False) -> dict:
+    """
+    Construye el payload correcto para OpenRouter.
+    - "models" array activa el fallback nativo automaticamente.
+    - NO incluir "route": "fallback" — ese campo causa HTTP 400.
+    """
+    payload: dict = {
+        "models": models_list,
+        "messages": [{"role": m.role, "content": m.content} for m in messages],
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    if stream:
+        payload["stream"] = True
+    return payload
 
 
 async def chat_completion(
@@ -66,20 +87,12 @@ async def chat_completion(
     temperature: float = 0.7,
     max_tokens: int = 2048,
 ) -> dict:
-    """
-    Completion usando OpenRouter native fallback.
-    Pasa 'models' array — OpenRouter prueba cada modelo en orden sin latencia extra.
-    """
+    """Completion con fallback nativo OpenRouter."""
     primary = model or MODEL_MAP.get(tier, settings.MODEL_PRIMARY)
     models_list = _build_models_list(primary)
+    payload = _build_payload(models_list, messages, temperature, max_tokens)
 
-    payload = {
-        "models": models_list,          # OpenRouter native fallback
-        "route": "fallback",
-        "messages": [{"role": m.role, "content": m.content} for m in messages],
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-    }
+    logger.info(f"[OpenRouter] Completion -> {models_list[0]} (+{len(models_list)-1} fallbacks)")
 
     try:
         async with httpx.AsyncClient(timeout=60.0, trust_env=False) as client:
@@ -90,8 +103,9 @@ async def chat_completion(
             )
 
         if response.status_code != 200:
-            logger.error(f"[OpenRouter] HTTP {response.status_code}: {response.text[:200]}")
-            raise Exception(f"OpenRouter HTTP {response.status_code}")
+            body = response.text[:400]
+            logger.error(f"[OpenRouter] HTTP {response.status_code}: {body}")
+            raise Exception(f"OpenRouter HTTP {response.status_code}: {body}")
 
         data = response.json()
 
@@ -120,21 +134,10 @@ async def chat_stream(
     temperature: float = 0.7,
     max_tokens: int = 2048,
 ) -> AsyncGenerator[str, None]:
-    """
-    Streaming usando OpenRouter native fallback.
-    Misma estrategia: 'models' array + route:fallback.
-    """
+    """Streaming con fallback nativo OpenRouter."""
     primary = model or MODEL_MAP.get(tier, settings.MODEL_PRIMARY)
     models_list = _build_models_list(primary)
-
-    payload = {
-        "models": models_list,
-        "route": "fallback",
-        "messages": [{"role": m.role, "content": m.content} for m in messages],
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "stream": True,
-    }
+    payload = _build_payload(models_list, messages, temperature, max_tokens, stream=True)
 
     logger.info(f"[OpenRouter] Stream -> {models_list[0]} (+{len(models_list)-1} fallbacks)")
 
@@ -148,8 +151,7 @@ async def chat_stream(
             ) as response:
                 if response.status_code != 200:
                     body = await response.aread()
-                    logger.error(f"[OpenRouter] Stream HTTP {response.status_code}: {body[:200]}")
-                    # Fallback a completion no-stream
+                    logger.error(f"[OpenRouter] Stream HTTP {response.status_code}: {body[:400]}")
                     result = await chat_completion(messages, model, tier, temperature, max_tokens)
                     yield result["content"]
                     return
@@ -172,17 +174,13 @@ async def chat_stream(
                             continue
                         try:
                             data = json.loads(data_str)
-
-                            # Capturar modelo usado (OpenRouter lo incluye en el stream)
                             if data.get("model"):
                                 model_used = data["model"]
-
                             if "error" in data:
                                 err_msg = data["error"].get("message", "Error desconocido")
                                 logger.error(f"[OpenRouter] Stream error: {err_msg}")
                                 yield f"\n\nError: {err_msg}"
                                 return
-
                             choices = data.get("choices", [])
                             if not choices:
                                 continue
@@ -190,7 +188,6 @@ async def chat_stream(
                             if content:
                                 chunk_count += 1
                                 yield content
-
                         except (json.JSONDecodeError, KeyError, IndexError):
                             continue
 
@@ -200,7 +197,6 @@ async def chat_stream(
         yield "\n\nTiempo de espera agotado. Intenta de nuevo."
     except Exception as e:
         logger.error(f"[OpenRouter] Stream exception: {e}")
-        # Ultimo recurso: completion sincrona
         try:
             result = await chat_completion(messages, model, tier, temperature, max_tokens)
             yield result["content"]
@@ -208,7 +204,6 @@ async def chat_stream(
             yield f"\n\nError: {str(e2)}"
 
 
-# Mantener compatibilidad con imports que usan select_model
 def select_model(tier: Optional[ModelTier] = None, task_complexity: str = "medium") -> str:
     if tier:
         return MODEL_MAP.get(tier, settings.MODEL_PRIMARY)
