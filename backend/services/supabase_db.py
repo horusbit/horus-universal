@@ -3,6 +3,7 @@ Supabase DB — Persistencia permanente de conversaciones HORUS
 Redis = caché rápido (7 días) | Supabase = historial permanente por usuario
 """
 import uuid
+from datetime import datetime, timezone
 from typing import List, Optional
 from config import settings
 from models.schemas import Message
@@ -125,9 +126,10 @@ async def save_message(conversation_id: str, message: Message, agent: str = None
             "agent": agent,
             "model_used": model_used,
         }).execute()
-        # Actualizar timestamp de la conversación
+        # Actualizar timestamp de la conversación (usar datetime real, no string "now()")
+        now_iso = datetime.now(timezone.utc).isoformat()
         client.table("conversations") \
-            .update({"updated_at": "now()"}) \
+            .update({"updated_at": now_iso}) \
             .eq("id", conversation_id) \
             .execute()
         return True

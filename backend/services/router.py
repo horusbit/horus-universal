@@ -63,9 +63,15 @@ def detect_agent(message: str, requested_agent=None) -> AgentType:
     Detecta el agente más apropiado para manejar el mensaje.
     Si el usuario ya eligió un agente específico (no ATLAS), respeta esa elección.
     """
+    # Normalizar: si viene como string (ej: "nova"), convertir a AgentType
+    if requested_agent and not isinstance(requested_agent, AgentType):
+        try:
+            requested_agent = AgentType(str(requested_agent).lower())
+        except ValueError:
+            requested_agent = None  # UUID de custom agent u valor desconocido
+
     # Si el usuario eligió un agente específico, respetarlo
     if requested_agent and requested_agent != AgentType.ATLAS:
-        # Solo respetar si es un AgentType válido (no UUID de custom agent)
         if isinstance(requested_agent, AgentType):
             return requested_agent
 
