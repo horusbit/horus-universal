@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: str = ""
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"
 
+    # Google Drive OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    APP_BASE_URL: str = "https://horus-backend.onrender.com"
+    FRONTEND_URL: str = "https://horus-universal.vercel.app"
+
     # Web Search (Tavily — 1000/mes gratis: https://tavily.com)
     TAVILY_API_KEY: str = ""
     BRAVE_SEARCH_API_KEY: str = ""  # legacy

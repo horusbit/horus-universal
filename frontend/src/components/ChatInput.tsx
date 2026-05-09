@@ -32,6 +32,7 @@ export default function ChatInput({ onSend, isLoading, placeholder, inputRef }: 
   const [recordingTime, setRecordingTime] = useState(0);
   const [fileLoading, setFileLoading] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ name: string; type: string } | null>(null);
+  const [showDrivePanel, setShowDrivePanel] = useState(false);
 
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = (inputRef as RefObject<HTMLTextAreaElement>) || internalRef;
@@ -294,7 +295,21 @@ export default function ChatInput({ onSend, isLoading, placeholder, inputRef }: 
               <span className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
             ) : "📎"}
           </button>
-          {/* Botón de micrófono */}
+          {/* Botón Google Drive */}
+          <button
+            onClick={() => setShowDrivePanel(p => !p)}
+            disabled={isLoading}
+            title="Adjuntar desde Google Drive"
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all
+              disabled:opacity-50
+              ${showDrivePanel ? "bg-green-600/20 text-green-400" : "text-[#64748b] hover:text-[#e2e8f0] hover:bg-[#1e1e2e]"}
+            `}
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.6 6L2 14.4h4.8L11.4 6H6.6zm.6 9.6L4.8 19.2h14.4l-2.4-3.6H7.2zm10.2-9.6L12 15.6l2.4 3.6L22 6h-4.6z"/>
+            </svg>
+          </button>
+          {/* Botón de micrófono */}}
           <button
             onClick={toggleVoice}
             disabled={voiceState === "transcribing" || isLoading}

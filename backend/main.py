@@ -16,6 +16,8 @@ from routers.telegram import router as telegram_router
 from routers.share import router as share_router
 from routers.custom_agents import router as custom_agents_router
 from routers.upload import router as upload_router
+from routers.gdrive import router as gdrive_router
+from routers.teams import router as teams_router
 import logging
 
 logging.basicConfig(
@@ -66,6 +68,8 @@ app.include_router(telegram_router, prefix="/api/v1")
 app.include_router(share_router, prefix="/api/v1")
 app.include_router(custom_agents_router, prefix="/api/v1")
 app.include_router(upload_router)
+app.include_router(gdrive_router, prefix="/api/v1")
+app.include_router(teams_router, prefix="/api/v1")
 
 
 @app.get("/")

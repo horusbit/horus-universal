@@ -238,3 +238,101 @@ async def system_health(user=Depends(get_optional_user)):
     health["lemonsqueezy"] = "configured" if settings.LEMONSQUEEZY_API_KEY else "not configured"
 
     return {"status": "operational", "services": health, "version": settings.APP_VERSION}
+
+
+@router.get("/analytics")
+async def get_analytics(
+    days: int = 30,
+    user=Depends(get_optional_user),
+):
+    """Analytics detallados: serie temporal, agentes, conversiones."""
+    _require_admin(user)
+    try:
+        from datetime import date, timedelta
+        client = _get_client()
+
+        # Serie temporal: mensajes por día (últimos N días)
+        end_date = date.today()
+        start_date = end_date - timedelta(days=days)
+
+        usage_series = client.table("daily_usage") \
+            .select("date, message_count, user_id") \
+            .gte("date", start_date.isoformat()) \
+            .lte("date", end_date.isoformat()) \
+            .execute()
+
+        # Agrupar por fecha
+        from collections import defaultdict
+        messages_by_day: dict = defaultdict(int)
+        users_by_day: dict = defaultdict(set)
+        for row in (usage_series.data or []):
+            d = row.get("date", "")[:10]
+            messages_by_day[d] += row.get("message_count", 0)
+            users_by_day[d].add(row.get("user_id", ""))
+
+        # Generar todas las fechas del rango
+        timeline = []
+        cursor = start_date
+        while cursor <= end_date:
+            ds = cursor.isoformat()
+            timeline.append({
+                "date": ds,
+                "messages": messages_by_day.get(ds, 0),
+                "active_users": len(users_by_day.get(ds, set())),
+            })
+            cursor += timedelta(days=1)
+
+        # Agentes más usados (de la tabla messages)
+        agents_result = client.table("messages") \
+            .select("agent") \
+            .not_.is_("agent", "null") \
+            .gte("created_at", start_date.isoformat()) \
+            .execute()
+
+        agent_counts: dict = defaultdict(int)
+        for row in (agents_result.data or []):
+            a = row.get("agent", "")
+            if a:
+                agent_counts[a] += 1
+        top_agents = sorted(
+            [{"agent": k, "count": v} for k, v in agent_counts.items()],
+            key=lambda x: x["count"], reverse=True
+        )[:10]
+
+        # Nuevos usuarios por semana
+        users_result = client.table("user_plans") \
+            .select("created_at, plan") \
+            .gte("created_at", start_date.isoformat()) \
+            .execute()
+
+        new_users_by_day: dict = defaultdict(int)
+        conversions_by_day: dict = defaultdict(int)
+        for row in (users_result.data or []):
+            d = (row.get("created_at") or "")[:10]
+            if d:
+                new_users_by_day[d] += 1
+                if row.get("plan") == "pro":
+                    conversions_by_day[d] += 1
+
+        # Total conversiones en el período
+        total_pro = client.table("user_plans") \
+            .select("id", count="exact") \
+            .eq("plan", "pro") \
+            .execute()
+
+        return {
+            "period_days": days,
+            "timeline": timeline,
+            "top_agents": top_agents,
+            "total_pro_users": total_pro.count or 0,
+            "new_users_period": sum(new_users_by_day.values()),
+            "new_conversions_period": sum(conversions_by_day.values()),
+            "summary": {
+                "total_messages_period": sum(messages_by_day.values()),
+                "peak_day": max(timeline, key=lambda x: x["messages"])["date"] if timeline else None,
+                "avg_daily_messages": round(sum(messages_by_day.values()) / max(len(timeline), 1), 1),
+            }
+        }
+    except Exception as e:
+        logger.error(f"[Admin] analytics error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

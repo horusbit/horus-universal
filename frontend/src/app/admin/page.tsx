@@ -159,6 +159,10 @@ export default function AdminPanel() {
             <div className="flex items-center gap-2">
               <span className="text-lg">🛡️</span>
               <h1 className="font-bold text-sm sm:text-base">Panel de Administración</h1>
+          <a href="/admin/analytics"
+            className="mt-1 inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-lg transition-colors">
+            📊 Analytics →
+          </a>
             </div>
           </div>
           <div className="flex items-center gap-2">

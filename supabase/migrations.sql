@@ -250,3 +250,49 @@ DROP TRIGGER IF EXISTS conversations_updated_at ON conversations;
 CREATE TRIGGER conversations_updated_at
     BEFORE UPDATE ON conversations
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ── Teams / Workspace ──────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS teams (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    owner_id UUID NOT NULL,
+    plan TEXT DEFAULT 'team',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS team_members (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    email TEXT DEFAULT '',
+    role TEXT DEFAULT 'member' CHECK (role IN ('admin', 'member', 'viewer')),
+    joined_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(team_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id);
+
+ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "team_members_select" ON team_members;
+CREATE POLICY "team_members_select" ON team_members
+    FOR SELECT USING (user_id = auth.uid() OR
+        team_id IN (SELECT team_id FROM team_members WHERE user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "team_members_insert" ON team_members;
+CREATE POLICY "team_members_insert" ON team_members
+    FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "teams_select" ON teams;
+CREATE POLICY "teams_select" ON teams
+    FOR SELECT USING (
+        id IN (SELECT team_id FROM team_members WHERE user_id = auth.uid())
+    );
+
+DROP POLICY IF EXISTS "teams_insert" ON teams;
+CREATE POLICY "teams_insert" ON teams
+    FOR ALL USING (true) WITH CHECK (true);
