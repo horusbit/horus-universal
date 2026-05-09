@@ -52,4 +52,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             window.addEventListener('load', function() {
               navigator.serviceWorker.register('/sw.js', { scope: '/' })
                 .then(reg => console.log('[HORUS] SW:', reg.scope))
-                .catch(err => 
+                .catch(err => console.warn('[HORUS] SW:', err));
+            });
+          }
+        `}} />
+      </body>
+    </html>
+  );
+}
