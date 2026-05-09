@@ -309,7 +309,7 @@ export default function ChatInput({ onSend, isLoading, placeholder, inputRef }: 
               <path d="M6.6 6L2 14.4h4.8L11.4 6H6.6zm.6 9.6L4.8 19.2h14.4l-2.4-3.6H7.2zm10.2-9.6L12 15.6l2.4 3.6L22 6h-4.6z"/>
             </svg>
           </button>
-          {/* Botón de micrófono */}}
+          {/* Botón de micrófono */}
           <button
             onClick={toggleVoice}
             disabled={voiceState === "transcribing" || isLoading}
