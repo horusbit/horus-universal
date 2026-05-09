@@ -10,6 +10,9 @@ import Sidebar, { saveConversationLocally } from "@/components/Sidebar";
 import OnboardingModal from "@/components/OnboardingModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useAuth } from "@/context/AuthContext";
+import NotificationBell, { pushNotification } from "@/components/NotificationBell";
+import { useToast } from "@/context/ToastContext";
+import { synthesizeSpeech } from "@/lib/api";
 import {
   streamMessage, AgentType, ChatMessage,
   getConversationMessages, setConversationTitle,
@@ -29,6 +32,7 @@ const now = () => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minu
 export default function HorusChat() {
   const router = useRouter();
   const { user, loading: authLoading, signOut } = useAuth();
+  const { showToast } = useToast();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<AgentType | string>("atlas");
@@ -213,6 +217,29 @@ export default function HorusChat() {
 
       setSidebarRefresh(r => r + 1);
       if (user) getUserPlan().then(setUserPlan);
+      // Auto-play TTS if message was sent via voice
+      if (lastVoiceRef.current && fullContent) {
+        lastVoiceRef.current = false;
+        try {
+          const cleanText = fullContent
+            .replace(/```[\s\S]*?```/g, " ")
+            .replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1")
+            .replace(/#{1,6}\s/g, "")
+            .trim().slice(0, 1000);
+          const url = await synthesizeSpeech(cleanText);
+          const audio = new Audio(url);
+          audio.play().catch(() => {});
+        } catch {}
+      }
+      // Push notification on first message of new conversation
+      if (messages.length === 0) {
+        pushNotification({
+          title: "Nueva conversación",
+          body: text.slice(0, 60) + (text.length > 60 ? "..." : ""),
+          type: "agent",
+          icon: "💬",
+        });
+      }
       // Save to localStorage — fallback definitivo para el sidebar
       saveConversationLocally({
         id: conversationId,
@@ -381,6 +408,7 @@ export default function HorusChat() {
               🛡️
             </a>
           )}
+          <NotificationBell />
           <button
             onClick={signOut}
             className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-red-400 p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-[#1e1e2e] hover:border-red-500/50 transition-colors flex-shrink-0"
@@ -427,6 +455,7 @@ export default function HorusChat() {
           )}
           <ChatInput
             onSend={handleSend}
+            onVoiceSend={(text) => { lastVoiceRef.current = true; handleSend(text); }}
             isLoading={isLoading}
             placeholder={`Mensaje para ${selectedAgent.toUpperCase()}... (Enter para enviar)`}
             inputRef={chatInputRef}

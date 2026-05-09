@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { ToastProvider } from "@/context/ToastContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,18 +43,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.className} bg-[#0a0a0f] text-[#e2e8f0] min-h-screen`}>
         <AuthProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </AuthProvider>
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
               navigator.serviceWorker.register('/sw.js', { scope: '/' })
                 .then(reg => console.log('[HORUS] SW:', reg.scope))
-                .catch(err => console.warn('[HORUS] SW:', err));
-            });
-          }
-        `}} />
-      </body>
-    </html>
-  );
-}
+                .catch(err => 

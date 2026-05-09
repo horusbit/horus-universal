@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Tiempo que un modelo se considera "muerto" antes de reintentarlo (5 min)
-COOLDOWN_SECONDS = 300
+COOLDOWN_SECONDS = 60
 
 _failed_models: Dict[str, float] = {}
 

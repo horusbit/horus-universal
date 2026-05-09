@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "HORUS Universal",
+    "slug": "horus-universal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0f"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.horusbit.horus",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "HORUS necesita acceso al micrófono para el chat de voz.",
+        "NSSpeechRecognitionUsageDescription": "HORUS usa reconocimiento de voz para transcribir mensajes."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0f"
+      },
+      "package": "com.horusbit.horus",
+      "permissions": ["RECORD_AUDIO", "INTERNET"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-av",
+        { "microphonePermission": "HORUS necesita acceso al micrófono para el chat de voz." }
+      ]
+    ],
+    "scheme": "horus",
+    "extra": {
+      "eas": { "projectId": "horus-universal" }
+    }
+  }
+}

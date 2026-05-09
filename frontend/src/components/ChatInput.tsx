@@ -21,11 +21,12 @@ interface ChatInputProps {
   isLoading: boolean;
   placeholder?: string;
   inputRef?: React.RefObject<HTMLTextAreaElement>;
+  onVoiceSend?: (text: string) => void;
 }
 
 type VoiceState = "idle" | "recording" | "transcribing" | "error";
 
-export default function ChatInput({ onSend, isLoading, placeholder, inputRef }: ChatInputProps) {
+export default function ChatInput({ onSend, isLoading, placeholder, inputRef, onVoiceSend }: ChatInputProps) {
   const [text, setText] = useState("");
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [voiceError, setVoiceError] = useState<string>("");
@@ -131,10 +132,19 @@ export default function ChatInput({ onSend, isLoading, placeholder, inputRef }: 
         try {
           const transcript = await transcribeAudio(audioBlob);
           if (transcript) {
-            setText(prev => prev ? `${prev} ${transcript}` : transcript);
-            textareaRef.current?.focus();
+            const fullText = text ? `${text} ${transcript}` : transcript;
+            if (onVoiceSend) {
+              setVoiceState("idle");
+              onVoiceSend(fullText);
+              setText("");
+            } else {
+              setText(fullText);
+              textareaRef.current?.focus();
+              setVoiceState("idle");
+            }
+          } else {
+            setVoiceState("idle");
           }
-          setVoiceState("idle");
         } catch (err: any) {
           // Fallback: Web Speech API (se usa cuando no hay GROQ_API_KEY o hay error)
           const useBrowserFallback = err?.message === "use_browser_stt" || err?.message?.includes("503");

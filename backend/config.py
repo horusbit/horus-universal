@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     MODEL_BALANCED: str = "google/gemini-2.0-flash-exp:free"
     MODEL_CRITICAL: str = "google/gemini-2.0-flash-thinking-exp:free"
     MODEL_DEEP: str = "meta-llama/llama-3.3-70b-instruct:free"
-    MODEL_FALLBACKS: str = "google/gemma-3-12b-it:free,meta-llama/llama-3.1-8b-instruct:free,mistralai/mistral-7b-instruct:free"
+    MODEL_FALLBACKS: str = "google/gemini-flash-1.5:free,google/gemma-3-27b-it:free,google/gemma-3-12b-it:free,meta-llama/llama-3.3-70b-instruct:free,meta-llama/llama-3.1-8b-instruct:free,deepseek/deepseek-chat:free,qwen/qwen3-14b:free,mistralai/mistral-7b-instruct:free,microsoft/phi-3-mini-128k-instruct:free"
 
     @property
     def cors_origins_list(self) -> List[str]:
