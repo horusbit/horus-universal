@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: str = ""
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"
 
+    # Brave Search
+    BRAVE_SEARCH_API_KEY: str = ""
+
     # Telegram bot
     TELEGRAM_BOT_TOKEN: str = ""
 
