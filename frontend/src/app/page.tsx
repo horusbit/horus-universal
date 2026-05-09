@@ -40,6 +40,7 @@ export default function HorusChat() {
   const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [customAgents, setCustomAgents] = useState<CustomAgent[]>([]);
+  const [serverWaking, setServerWaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const titleSetRef = useRef(false);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
@@ -51,10 +52,17 @@ export default function HorusChat() {
     }
   }, [user, authLoading, router]);
 
-  // Wake-up ping + cargar plan + onboarding + agentes personalizados
+  // Keep-alive: ping cada 8 minutos para evitar cold starts en Render free tier
   useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    fetch(`${API_URL}/health`).catch(() => {});
+    const ping = () => fetch(`${API_URL}/health`).catch(() => {});
+    ping();
+    const interval = setInterval(ping, 8 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Cargar plan + onboarding + agentes personalizados
+  useEffect(() => {
     if (user) {
       getUserPlan().then(setUserPlan);
       listCustomAgents().then(setCustomAgents);
@@ -188,8 +196,12 @@ export default function HorusChat() {
 
     autoSetTitle(conversationId, text);
 
+    // Mostrar indicador si el servidor tarda más de 4s en responder (cold start)
+    const wakingTimer = setTimeout(() => setServerWaking(true), 4000);
+
     try {
       let fullContent = "";
+      let firstChunk = true;
 
       for await (const chunk of streamMessage({
         message: text,
@@ -197,6 +209,11 @@ export default function HorusChat() {
         conversation_id: conversationId,
         history: messages.slice(-10).map(({ role, content }) => ({ role, content })),
       })) {
+        if (firstChunk) {
+          clearTimeout(wakingTimer);
+          setServerWaking(false);
+          firstChunk = false;
+        }
         fullContent += chunk;
         setMessages(prev =>
           prev.map(m =>
@@ -210,6 +227,8 @@ export default function HorusChat() {
       if (user) getUserPlan().then(setUserPlan);
 
     } catch (err: unknown) {
+      clearTimeout(wakingTimer);
+      setServerWaking(false);
       const msg = err instanceof Error && err.message.includes("limit_reached")
         ? "⚠️ Límite diario alcanzado. [Actualiza a Pro ⚡](javascript:void(0)) para uso ilimitado."
         : "❌ Error conectando con el servidor. Verifica que el backend esté corriendo.";
@@ -219,6 +238,8 @@ export default function HorusChat() {
         )
       );
     } finally {
+      clearTimeout(wakingTimer);
+      setServerWaking(false);
       setIsLoading(false);
     }
   }, [isLoading, selectedAgent, conversationId, messages, autoSetTitle, user]);
@@ -409,6 +430,12 @@ export default function HorusChat() {
 
         {/* Input */}
         <div className="px-4 pb-4 pt-2 border-t border-[#1e1e2e] bg-[#0a0a0f] flex-shrink-0">
+          {serverWaking && (
+            <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-900/20 border border-amber-500/20 rounded-lg px-3 py-2 mb-2">
+              <span className="w-3 h-3 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin flex-shrink-0" />
+              Despertando servidor... (primera vez tarda ~20s en Render free tier)
+            </div>
+          )}
           <ChatInput
             onSend={handleSend}
             isLoading={isLoading}
