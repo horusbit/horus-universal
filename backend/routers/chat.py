@@ -179,6 +179,8 @@ async def chat_stream_endpoint(
         await ensure_conversation_exists(conversation_id, user.id, effective_agent_value)
         await save_message(conversation_id, user_msg)
         await increment_usage(user.id)
+        # Registrar en Redis por usuario (fallback si Supabase falla)
+        await cache.register_user_conversation(user.id, conversation_id)
 
     full_response = []
 
@@ -248,6 +250,4 @@ async def clear_conversation(
     conversation_id: str,
     user=Depends(get_optional_user),
 ):
-    """Limpia el historial de una conversación."""
-    await cache.delete_conversation(conversation_id)
-    return {"message": "Conversación eliminada", "conversation_id": conversation_id}
+    """Limpia el historial de una conversación.

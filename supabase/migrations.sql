@@ -122,11 +122,6 @@ CREATE POLICY "custom_agents_service_all" ON custom_agents
 
 CREATE INDEX IF NOT EXISTS idx_custom_agents_user_id ON custom_agents(user_id);
 
-DROP TRIGGER IF EXISTS custom_agents_updated_at ON custom_agents;
-CREATE TRIGGER custom_agents_updated_at
-    BEFORE UPDATE ON custom_agents
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 -- ── 5. Función para updated_at automático ────────────
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -135,6 +130,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS custom_agents_updated_at ON custom_agents;
+CREATE TRIGGER custom_agents_updated_at
+    BEFORE UPDATE ON custom_agents
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS user_memory_updated_at ON user_memory;
 CREATE TRIGGER user_memory_updated_at

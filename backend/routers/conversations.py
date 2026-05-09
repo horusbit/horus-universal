@@ -29,25 +29,38 @@ class ConversationSummary(BaseModel):
 
 @router.get("/", response_model=List[ConversationSummary])
 async def list_conversations(user=Depends(get_optional_user)):
-    """Lista las conversaciones del usuario autenticado desde Supabase."""
+    """Lista conversaciones: Supabase primero, Redis como fallback para usuarios autenticados."""
     try:
         if user:
+            # 1. Intentar Supabase
             rows = await get_conversations_with_counts(user.id)
-            return [
-                ConversationSummary(
-                    id=row["id"],
-                    title=row["title"],
-                    message_count=row.get("message_count", 0),
-                    last_message=row.get("last_message", ""),
-                    agent=row.get("agent", "atlas"),
-                )
-                for row in rows
-            ]
+            if rows:
+                return [
+                    ConversationSummary(
+                        id=row["id"],
+                        title=row["title"],
+                        message_count=row.get("message_count", 0),
+                        last_message=row.get("last_message", ""),
+                        agent=row.get("agent", "atlas"),
+                    )
+                    for row in rows
+                ]
+            # 2. Fallback a Redis si Supabase está vacío o falla
+            logger.warning(f"[Conversations] Supabase vacío para user {user.id}, usando Redis fallback")
+            summaries = await cache.list_user_conversations(user.id)
+            return [ConversationSummary(**s) for s in summaries]
         else:
             summaries = await cache.list_conversations()
             return [ConversationSummary(**s) for s in summaries]
     except Exception as e:
         logger.error(f"Error listando conversaciones: {e}")
+        # Fallback a Redis en caso de excepción
+        if user:
+            try:
+                summaries = await cache.list_user_conversations(user.id)
+                return [ConversationSummary(**s) for s in summaries]
+            except Exception:
+                pass
         return []
 
 
@@ -115,23 +128,4 @@ async def share_conversation(
 ):
     """Genera un enlace público para compartir la conversación."""
     if not user:
-        raise HTTPException(status_code=401, detail="Autenticación requerida.")
-    token = await create_share_token(conversation_id, user.id)
-    if not token:
-        raise HTTPException(status_code=500, detail="No se pudo crear el enlace.")
-    return {
-        "token": token,
-        "share_url": f"/share/{token}",
-    }
-
-
-@router.delete("/{conversation_id}")
-async def remove_conversation(
-    conversation_id: str,
-    user=Depends(get_optional_user),
-):
-    """Elimina conversación de Redis y Supabase."""
-    await cache.delete_conversation(conversation_id)
-    if user:
-        await delete_conversation(conversation_id, user.id)
-    return {"message": "Conversación eliminada", "conversation_id": conversation_id}
+        raise HTTPException

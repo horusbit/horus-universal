@@ -150,36 +150,28 @@ class RedisCache:
         except Exception as e:
             logger.warning(f"[Redis] _register_conversation error: {e}")
 
-    async def list_conversations(self) -> list:
-        """Lista todas las conversaciones con resumen."""
+    async def register_user_conversation(self, user_id: str, conversation_id: str):
+        """Registra la conversación bajo el índice del usuario (fallback cuando Supabase no responde)."""
         try:
+            key = f"user:{user_id}:conv_ids"
             client = self._get_client()
             if client:
-                ids = client.lrange("conv:index", 0, 49) or []
+                existing = client.lrange(key, 0, -1)
+                if conversation_id not in (existing or []):
+                    client.lpush(key, conversation_id)
+                    client.expire(key, DEFAULT_TTL)
             else:
-                ids = self._mem_get("conv:index") or []
-
-            result = []
-            for conv_id in ids:
-                messages = await self.get_conversation(conv_id)
-                if not messages:
-                    continue
-                title = await self.get_conversation_title(conv_id) or "Nueva conversación"
-                last_user_msg = next(
-                    (m.content[:80] for m in reversed(messages) if m.role == "user"),
-                    ""
-                )
-                result.append({
-                    "id": conv_id,
-                    "title": title,
-                    "message_count": len(messages),
-                    "last_message": last_user_msg,
-                })
-            return result
+                idx = self._mem_get(key) or []
+                if conversation_id not in idx:
+                    idx.insert(0, conversation_id)
+                    self._mem_set(key, idx)
         except Exception as e:
-            logger.error(f"[Redis] list_conversations error: {e}")
-            return []
+            logger.warning(f"[Redis] register_user_conversation error: {e}")
 
-
-# Instancia global
-cache = RedisCache()
+    async def list_user_conversations(self, user_id: str) -> list:
+        """Lista conversaciones de un usuario desde Redis (fallback de Supabase)."""
+        try:
+            key = f"user:{user_id}:conv_ids"
+            client = self._get_client()
+            if client:
+                ids = client.lrange(key, 0, 49) or
