@@ -1,22 +1,25 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import AgentSelector from "@/components/AgentSelector";
 import MessageBubble from "@/components/MessageBubble";
 import ChatInput from "@/components/ChatInput";
 import Sidebar from "@/components/Sidebar";
+import OnboardingModal from "@/components/OnboardingModal";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useAuth } from "@/context/AuthContext";
 import {
   streamMessage, AgentType, ChatMessage,
   getConversationMessages, setConversationTitle,
   getUserPlan, createCheckout, UserPlan,
+  listCustomAgents, CustomAgent,
 } from "@/lib/api";
 
 interface Message extends ChatMessage {
   id: string;
-  agent?: AgentType;
+  agent?: AgentType | string;
   model?: string;
   timestamp?: string;
 }
@@ -25,18 +28,22 @@ const now = () => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minu
 
 export default function HorusChat() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading, signOut } = useAuth();
 
   // ── Todos los hooks ANTES de cualquier return condicional ──
   const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<AgentType>("atlas");
+  const [selectedAgent, setSelectedAgent] = useState<AgentType | string>("atlas");
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string>(uuidv4());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarRefresh, setSidebarRefresh] = useState(0);
   const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [customAgents, setCustomAgents] = useState<CustomAgent[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const titleSetRef = useRef(false);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Auth guard
   useEffect(() => {
@@ -45,11 +52,20 @@ export default function HorusChat() {
     }
   }, [user, authLoading, router]);
 
-  // Wake-up ping + cargar plan del usuario
+  // Wake-up ping + cargar plan + onboarding + agentes personalizados
   useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     fetch(`${API_URL}/health`).catch(() => {});
-    if (user) getUserPlan().then(setUserPlan);
+    if (user) {
+      getUserPlan().then(setUserPlan);
+      listCustomAgents().then(setCustomAgents);
+      // Mostrar onboarding solo la primera vez
+      const seen = localStorage.getItem("horus_onboarding_done");
+      if (!seen) setShowOnboarding(true);
+      // Si viene con ?agent=UUID, pre-seleccionar agente personalizado
+      const agentParam = searchParams?.get("agent");
+      if (agentParam) setSelectedAgent(agentParam);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -98,6 +114,47 @@ export default function HorusChat() {
     URL.revokeObjectURL(url);
   }, [messages]);
 
+  const exportAsPDF = useCallback(() => {
+    if (!messages.length) return;
+    const rows = messages.map(m => {
+      const isUser = m.role === "user";
+      const name = isUser ? "Tú" : (m.agent || "atlas").toUpperCase();
+      const avatar = isUser ? "👤" : "🤖";
+      const bg = isUser ? "#1a1a2e" : "#12121a";
+      const border = isUser ? "#2d2d4e" : "#1e1e2e";
+      const content = m.content
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")
+        .replace(/`([^`]+)`/g, "<code>$1</code>")
+        .replace(/\n/g, "<br>");
+      return `<div style="background:${bg};border:1px solid ${border};border-radius:12px;padding:16px;margin-bottom:12px">
+        <div style="font-size:11px;color:#64748b;margin-bottom:8px;font-weight:600;letter-spacing:0.05em">${avatar} ${name}</div>
+        <div style="color:#e2e8f0;font-size:13px;line-height:1.7">${content}</div>
+      </div>`;
+    }).join("");
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Conversación HORUS</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0f;color:#e2e8f0;margin:0;padding:24px}
+      h1{font-size:20px;font-weight:700;color:#e2e8f0;margin:0 0 4px}
+      .meta{font-size:11px;color:#64748b;margin-bottom:24px}
+      code{background:#1e1e2e;padding:2px 6px;border-radius:4px;font-size:12px;color:#a78bfa}
+      @media print{body{background:#fff;color:#111}h1{color:#111}.meta{color:#666}code{background:#f1f5f9;color:#7c3aed}}
+    </style></head><body>
+    <h1>👁 HORUS Universal</h1>
+    <div class="meta">Exportado el ${new Date().toLocaleString("es-ES")}</div>
+    ${rows}
+    <script>window.onload=function(){window.print();}<\/script>
+    </body></html>`;
+
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); }
+  }, [messages]);
+
   const handleSend = useCallback(async (text: string) => {
     if (isLoading) return;
 
@@ -108,12 +165,22 @@ export default function HorusChat() {
       timestamp: now(),
     };
 
+    // For custom agents (UUID), use the agent name for display
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isCustomAgent = UUID_RE.test(selectedAgent);
+    const customAgentForDisplay = isCustomAgent
+      ? customAgents.find(a => a.id === selectedAgent)
+      : null;
+    const agentForDisplay = customAgentForDisplay
+      ? (customAgentForDisplay.name.toLowerCase() as AgentType)
+      : (selectedAgent as AgentType);
+
     const assistantMsgId = uuidv4();
     const assistantMsg: Message = {
       id: assistantMsgId,
       role: "assistant",
       content: "",
-      agent: selectedAgent,
+      agent: agentForDisplay,
       timestamp: now(),
     };
 
@@ -157,6 +224,14 @@ export default function HorusChat() {
     }
   }, [isLoading, selectedAgent, conversationId, messages, autoSetTitle, user]);
 
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onNewChat: startNewChat,
+    onToggleSidebar: () => setSidebarOpen(s => !s),
+    onFocusInput: () => chatInputRef.current?.focus(),
+    onSearch: () => setSidebarOpen(true),
+  });
+
   const handleRegenerate = useCallback(async () => {
     if (isLoading || messages.length < 2) return;
     let lastUserMsg = "";
@@ -187,6 +262,14 @@ export default function HorusChat() {
 
   return (
     <div className="flex h-screen bg-[#0a0a0f] overflow-hidden">
+      {/* Onboarding */}
+      {showOnboarding && (
+        <OnboardingModal onComplete={() => {
+          localStorage.setItem("horus_onboarding_done", "1");
+          setShowOnboarding(false);
+        }} />
+      )}
+
       {/* Sidebar */}
       <Sidebar
         currentId={conversationId}
@@ -215,7 +298,11 @@ export default function HorusChat() {
             ◀
           </button>
           <div className="flex-1">
-            <AgentSelector selected={selectedAgent} onChange={setSelectedAgent} />
+            <AgentSelector
+              selected={selectedAgent}
+              onChange={setSelectedAgent}
+              customAgents={customAgents}
+            />
           </div>
           {/* Nuevo chat — visible en todos los tamaños */}
           <button
@@ -229,10 +316,24 @@ export default function HorusChat() {
           </button>
           {/* Indicador de plan / upgrade — visible en todos los tamaños */}
           {userPlan && userPlan.plan === "free" && userPlan.limit && (
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="text-xs text-[#64748b] hidden sm:inline">
-                {userPlan.used}/{userPlan.limit}
-              </span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Barra de progreso */}
+              <div className="hidden sm:flex flex-col gap-0.5 min-w-[80px]">
+                <div className="flex justify-between text-[10px] text-[#475569]">
+                  <span>{userPlan.used}/{userPlan.limit}</span>
+                  <span>{Math.round((userPlan.used / userPlan.limit) * 100)}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-[#1e1e2e] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      userPlan.used / userPlan.limit >= 0.9 ? "bg-red-500" :
+                      userPlan.used / userPlan.limit >= 0.7 ? "bg-amber-500" :
+                      "bg-indigo-500"
+                    }`}
+                    style={{ width: `${Math.min((userPlan.used / userPlan.limit) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
               <button
                 onClick={async () => {
                   const url = await createCheckout();
@@ -248,6 +349,14 @@ export default function HorusChat() {
           {userPlan?.plan === "pro" && (
             <span className="text-xs text-purple-400 font-medium flex-shrink-0">⚡ Pro</span>
           )}
+          {/* Mis Agentes */}
+          <a
+            href="/agents"
+            className="text-xs text-[#64748b] hover:text-purple-400 transition-colors flex-shrink-0"
+            title="Mis agentes personalizados"
+          >
+            🤖
+          </a>
           {/* Admin link — solo para horuseict@gmail.com */}
           {user?.email === "horuseict@gmail.com" && (
             <a
@@ -305,15 +414,23 @@ export default function HorusChat() {
             onSend={handleSend}
             isLoading={isLoading}
             placeholder={`Mensaje para ${selectedAgent.toUpperCase()}... (Enter para enviar)`}
+            inputRef={chatInputRef}
           />
           {messages.length > 0 && (
-            <div className="flex justify-end mt-1.5">
+            <div className="flex justify-end gap-3 mt-1.5">
               <button
                 onClick={exportConversation}
                 className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors flex items-center gap-1"
                 title="Descargar conversación como Markdown"
               >
-                ⬇ exportar chat
+                ⬇ .md
+              </button>
+              <button
+                onClick={exportAsPDF}
+                className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors flex items-center gap-1"
+                title="Exportar conversación como PDF"
+              >
+                📄 PDF
               </button>
             </div>
           )}

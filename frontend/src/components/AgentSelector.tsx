@@ -1,15 +1,15 @@
 "use client";
 
-import { AgentType } from "@/lib/api";
+import { AgentType, CustomAgent } from "@/lib/api";
 
-interface Agent {
+interface BuiltinAgent {
   id: AgentType;
   name: string;
   icon: string;
   description: string;
 }
 
-const AGENTS: Agent[] = [
+const AGENTS: BuiltinAgent[] = [
   { id: "atlas",    name: "ATLAS",    icon: "🌐", description: "Orquestador" },
   { id: "cipher",   name: "CIPHER",   icon: "⚡", description: "Código" },
   { id: "nova",     name: "NOVA",     icon: "✨", description: "Marketing" },
@@ -29,11 +29,12 @@ const AGENTS: Agent[] = [
 ];
 
 interface AgentSelectorProps {
-  selected: AgentType;
-  onChange: (agent: AgentType) => void;
+  selected: AgentType | string;
+  onChange: (agent: AgentType | string) => void;
+  customAgents?: CustomAgent[];
 }
 
-export default function AgentSelector({ selected, onChange }: AgentSelectorProps) {
+export default function AgentSelector({ selected, onChange, customAgents = [] }: AgentSelectorProps) {
   return (
     <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
       {AGENTS.map((agent) => (
@@ -54,6 +55,31 @@ export default function AgentSelector({ selected, onChange }: AgentSelectorProps
           <span>{agent.name}</span>
         </button>
       ))}
+
+      {/* Separator + custom agents */}
+      {customAgents.length > 0 && (
+        <>
+          <div className="w-px bg-[#1e1e2e] self-stretch mx-1 flex-shrink-0" />
+          {customAgents.map((agent) => (
+            <button
+              key={agent.id}
+              onClick={() => onChange(agent.id)}
+              title={agent.description || agent.name}
+              className={`
+                flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                whitespace-nowrap transition-all duration-200 border
+                ${selected === agent.id
+                  ? "bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-500/20"
+                  : "bg-[#12121a] border-[#2d1b4e] text-[#94748b] hover:border-purple-500/50 hover:text-[#e2e8f0]"
+                }
+              `}
+            >
+              <span>{agent.emoji}</span>
+              <span>{agent.name.toUpperCase()}</span>
+            </button>
+          ))}
+        </>
+      )}
     </div>
   );
 }

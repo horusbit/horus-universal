@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, RefObject } from "react";
 import { transcribeAudio } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -20,11 +20,12 @@ interface ChatInputProps {
   onSend: (text: string) => void;
   isLoading: boolean;
   placeholder?: string;
+  inputRef?: React.RefObject<HTMLTextAreaElement>;
 }
 
 type VoiceState = "idle" | "recording" | "transcribing" | "error";
 
-export default function ChatInput({ onSend, isLoading, placeholder }: ChatInputProps) {
+export default function ChatInput({ onSend, isLoading, placeholder, inputRef }: ChatInputProps) {
   const [text, setText] = useState("");
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [voiceError, setVoiceError] = useState<string>("");
@@ -32,7 +33,8 @@ export default function ChatInput({ onSend, isLoading, placeholder }: ChatInputP
   const [fileLoading, setFileLoading] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ name: string; type: string } | null>(null);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const internalRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = (inputRef as RefObject<HTMLTextAreaElement>) || internalRef;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);

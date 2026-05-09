@@ -85,7 +85,39 @@ CREATE POLICY "telegram_users_service_all" ON telegram_users
 -- Índice por telegram_id
 CREATE INDEX IF NOT EXISTS idx_telegram_users_tg_id ON telegram_users(telegram_id);
 
--- ── 4. Verificar que las tablas base existen ──────────
+-- ── 4. Agentes personalizados por usuario ────────────
+-- Permite a cada usuario crear sus propios agentes con
+-- nombre, ícono, descripción y prompt del sistema personalizado.
+CREATE TABLE IF NOT EXISTS custom_agents (
+    id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name            TEXT NOT NULL,
+    emoji           TEXT NOT NULL DEFAULT '🤖',
+    description     TEXT NOT NULL DEFAULT '',
+    system_prompt   TEXT NOT NULL,
+    base_model      TEXT NOT NULL DEFAULT 'google/gemini-flash-1.5',
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE custom_agents ENABLE ROW LEVEL SECURITY;
+
+-- Cada usuario solo ve/gestiona sus propios agentes
+CREATE POLICY "custom_agents_owner" ON custom_agents
+    USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Service role acceso total
+CREATE POLICY "custom_agents_service_all" ON custom_agents
+    USING (true) WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS idx_custom_agents_user_id ON custom_agents(user_id);
+
+DROP TRIGGER IF EXISTS custom_agents_updated_at ON custom_agents;
+CREATE TRIGGER custom_agents_updated_at
+    BEFORE UPDATE ON custom_agents
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ── 5. Verificar que las tablas base existen ──────────
 -- (Las siguientes ya deberían existir; son recordatorio)
 -- conversations(id, user_id, title, agent, updated_at)
 -- messages(id, conversation_id, role, content, agent, model_used, created_at)

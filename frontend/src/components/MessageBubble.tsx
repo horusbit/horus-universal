@@ -28,7 +28,7 @@ const AGENT_META: Record<AgentType | string, { icon: string; color: string }> = 
 interface MessageBubbleProps {
   role: "user" | "assistant";
   content: string;
-  agent?: AgentType;
+  agent?: AgentType | string;
   model?: string;
   isStreaming?: boolean;
   timestamp?: string;
@@ -252,7 +252,7 @@ export default function MessageBubble({
     );
   }
 
-  const meta = AGENT_META[agent || "atlas"] || AGENT_META.atlas;
+  const meta = AGENT_META[agent || "atlas"] || { icon: "🤖", color: "bg-purple-600" };
   const agentName = agent?.toUpperCase() || "ATLAS";
   const parts = content ? parseContent(content) : [];
 

@@ -12,7 +12,7 @@ export interface ChatMessage {
 
 export interface ChatRequest {
   message: string;
-  agent: AgentType;
+  agent: AgentType | string;  // string also allows custom agent UUIDs
   conversation_id?: string;
   history?: ChatMessage[];
   stream?: boolean;
@@ -304,6 +304,69 @@ export async function getSharedConversation(token: string): Promise<{
     if (!r.ok) return null;
     return r.json();
   } catch { return null; }
+}
+
+// ── Agentes personalizados ────────────────────────────────────────────────────
+
+export interface CustomAgent {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  system_prompt: string;
+  base_model: string;
+  created_at?: string;
+}
+
+export interface CustomAgentCreate {
+  name: string;
+  emoji: string;
+  description: string;
+  system_prompt: string;
+  base_model: string;
+}
+
+export async function listCustomAgents(): Promise<CustomAgent[]> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const r = await fetch(`${API_URL}/api/v1/agents/custom/`, { headers: authHeaders });
+    if (!r.ok) return [];
+    return r.json();
+  } catch { return []; }
+}
+
+export async function createCustomAgent(data: CustomAgentCreate): Promise<CustomAgent | null> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const r = await fetch(`${API_URL}/api/v1/agents/custom/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders },
+      body: JSON.stringify(data),
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail || `Error ${r.status}`);
+    }
+    return r.json();
+  } catch (e) { throw e; }
+}
+
+export async function deleteCustomAgent(id: string): Promise<void> {
+  const authHeaders = await getAuthHeaders();
+  await fetch(`${API_URL}/api/v1/agents/custom/${id}`, {
+    method: "DELETE",
+    headers: authHeaders,
+  }).catch(() => {});
+}
+
+export async function getAvailableModels(): Promise<string[]> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const r = await fetch(`${API_URL}/api/v1/agents/custom/models/available`, { headers: authHeaders });
+    if (!r.ok) return [];
+    const data = await r.json();
+    return data.models || [];
+  } catch { return []; }
 }
 
 export async function synthesizeSpeech(
