@@ -31,6 +31,7 @@ export interface ConversationSummary {
   title: string;
   message_count: number;
   last_message?: string;
+  agent?: string;
 }
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
