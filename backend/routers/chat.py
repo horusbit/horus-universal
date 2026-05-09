@@ -15,6 +15,7 @@ from services.router import detect_agent, get_routing_message
 from services.supabase_db import ensure_conversation_exists, save_message, get_custom_agent_by_id
 from services.usage import check_usage_limit, increment_usage
 from services.memory import get_user_memory, extract_and_save_facts, build_memory_context
+from services.web_search import needs_web_search, search_web, format_search_context
 from auth.supabase_auth import get_optional_user
 import logging
 
@@ -172,6 +173,14 @@ async def chat_stream_endpoint(
         effective_agent_value = effective_agent.value
         routing_prefix = get_routing_message(effective_agent, request.agent)
 
+    # Búsqueda web automática si el mensaje lo requiere
+    web_context = ""
+    if needs_web_search(request.message):
+        search_results = await search_web(request.message)
+        if search_results:
+            web_context = format_search_context(search_results, request.message)
+            logger.info(f"[WebSearch] Contexto agregado: {len(web_context)} chars")
+
     if user:
         memory = await get_user_memory(user.id)
         memory_context = build_memory_context(memory)
@@ -181,6 +190,10 @@ async def chat_stream_endpoint(
         await increment_usage(user.id)
         # Registrar en Redis por usuario (fallback si Supabase falla)
         await cache.register_user_conversation(user.id, conversation_id)
+
+    # Combinar contextos: memoria + web search
+    if web_context:
+        memory_context = (web_context + "\n\n" + memory_context).strip()
 
     full_response = []
 
@@ -231,23 +244,4 @@ async def chat_stream_endpoint(
 
     return StreamingResponse(
         generate(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
-
-
-@router.get("/usage")
-async def get_usage(user=Depends(get_optional_user)):
-    """Devuelve el uso actual del usuario."""
-    if not user:
-        return {"plan": "anonymous", "used": 0, "limit": None, "allowed": True}
-    user_email = getattr(user, "email", "")
-    return await check_usage_limit(user, user_email)
-
-
-@router.delete("/{conversation_id}")
-async def clear_conversation(
-    conversation_id: str,
-    user=Depends(get_optional_user),
-):
-    """Limpia el historial de una conversación.
+        media_type="tex

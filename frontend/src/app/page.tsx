@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import AgentSelector from "@/components/AgentSelector";
 import MessageBubble from "@/components/MessageBubble";
 import ChatInput from "@/components/ChatInput";
-import Sidebar from "@/components/Sidebar";
+import Sidebar, { saveConversationLocally } from "@/components/Sidebar";
 import OnboardingModal from "@/components/OnboardingModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useAuth } from "@/context/AuthContext";
@@ -213,6 +213,14 @@ export default function HorusChat() {
 
       setSidebarRefresh(r => r + 1);
       if (user) getUserPlan().then(setUserPlan);
+      // Save to localStorage — fallback definitivo para el sidebar
+      saveConversationLocally({
+        id: conversationId,
+        title: text.slice(0, 50) + (text.length > 50 ? "..." : ""),
+        agent: selectedAgent as string,
+        last_message: text.slice(0, 80),
+        message_count: messages.length + 2,
+      });
 
     } catch (err: unknown) {
       clearTimeout(wakingTimer);
@@ -282,6 +290,10 @@ export default function HorusChat() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         refreshTrigger={sidebarRefresh}
+        user={user}
+        userPlan={userPlan}
+        onLogout={signOut}
+        onUpgrade={() => createCheckout().then(url => url && window.open(url, "_blank"))}
       />
 
       <div className="flex flex-col flex-1 min-w-0">
@@ -470,16 +482,4 @@ function WelcomeScreen({
         {QUICK_ACTIONS.map((action, i) => (
           <button
             key={i}
-            onClick={() => { onAgentSelect(action.agent); onSend(action.text); }}
-            className="text-left p-4 bg-[#12121a] border border-[#1e1e2e] rounded-xl hover:border-indigo-500/50 hover:bg-[#12121a]/80 transition-all group"
-          >
-            <div className="text-sm font-mono text-indigo-400 mb-2">{action.icon}</div>
-            <p className="text-xs text-[#94a3b8] group-hover:text-[#e2e8f0] transition-colors leading-relaxed">
-              {action.text}
-            </p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
+            onClick={() => { on
