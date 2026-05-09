@@ -50,6 +50,55 @@ async def get_conversations(user_id: str, limit: int = 50) -> list:
         return []
 
 
+async def get_conversations_with_counts(user_id: str, limit: int = 50) -> list:
+    """Lista conversaciones con conteo real de mensajes desde Supabase (sin depender de Redis)."""
+    try:
+        client = _get_client()
+        # Obtener conversaciones
+        result = client.table("conversations") \
+            .select("id, title, agent, updated_at") \
+            .eq("user_id", user_id) \
+            .order("updated_at", desc=True) \
+            .limit(limit) \
+            .execute()
+        rows = result.data or []
+        if not rows:
+            return []
+
+        # Para cada conversación, contar mensajes y obtener el último mensaje del usuario
+        enriched = []
+        for row in rows:
+            try:
+                count_result = client.table("messages") \
+                    .select("id", count="exact") \
+                    .eq("conversation_id", row["id"]) \
+                    .execute()
+                count = count_result.count or 0
+
+                # Último mensaje del usuario
+                last_result = client.table("messages") \
+                    .select("content, role") \
+                    .eq("conversation_id", row["id"]) \
+                    .eq("role", "user") \
+                    .order("created_at", desc=True) \
+                    .limit(1) \
+                    .execute()
+                last_msg = last_result.data[0]["content"][:80] if last_result.data else ""
+
+                enriched.append({
+                    **row,
+                    "message_count": count,
+                    "last_message": last_msg,
+                })
+            except Exception:
+                enriched.append({**row, "message_count": 0, "last_message": ""})
+
+        return enriched
+    except Exception as e:
+        logger.error(f"[SupabaseDB] get_conversations_with_counts error: {e}")
+        return []
+
+
 async def get_conversation_messages(conversation_id: str) -> List[Message]:
     """Obtiene los mensajes de una conversación."""
     try:
