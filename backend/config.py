@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # Gemini backup
     GEMINI_API_KEY: str = ""
 
-    # Voz - Fase 2
+    # Voz
     GROQ_API_KEY: str = ""
     ELEVENLABS_API_KEY: str = ""
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"
@@ -36,18 +36,26 @@ class Settings(BaseSettings):
     APP_BASE_URL: str = "https://horus-backend.onrender.com"
     FRONTEND_URL: str = "https://horus-universal.vercel.app"
 
-    # Web Search (Tavily — 1000/mes gratis: https://tavily.com)
+    # Web Search
     TAVILY_API_KEY: str = ""
-    BRAVE_SEARCH_API_KEY: str = ""  # legacy
+    BRAVE_SEARCH_API_KEY: str = ""
 
     # Telegram bot
     TELEGRAM_BOT_TOKEN: str = ""
 
-    # Lemon Squeezy - Fase 6
+    # Lemon Squeezy
     LEMONSQUEEZY_API_KEY: str = ""
     LEMONSQUEEZY_STORE_ID: str = ""
     LEMONSQUEEZY_VARIANT_ID: str = ""
     LEMONSQUEEZY_WEBHOOK_SECRET: str = ""
+
+    # Email (para notificaciones Teams)
+    RESEND_API_KEY: str = ""
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASS: str = ""
+    EMAIL_FROM: str = "HORUS Universal <noreply@horusai.app>"
 
     # Modelos activos — actualizados mayo 2026
     # openrouter/free = auto-router que elige el mejor modelo free disponible
@@ -70,4 +78,9 @@ class Settings(BaseSettings):
     def voice_enabled(self) -> bool:
         return bool(self.GROQ_API_KEY or self.ELEVENLABS_API_KEY)
 
-    clas
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
+
+
+settings = Settings()
