@@ -233,9 +233,9 @@ export default function MessageBubble({
 
   if (role === "user") {
     return (
-      <div className="flex justify-end mb-4 group">
+      <div className="flex justify-end mb-6 group">
         <div className="max-w-[80%] sm:max-w-[75%]">
-          <div className="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed">
+          <div className="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-base leading-relaxed">
             {content}
           </div>
           <div className="flex items-center justify-end gap-2 mt-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
@@ -257,15 +257,15 @@ export default function MessageBubble({
   const parts = content ? parseContent(content) : [];
 
   return (
-    <div className="flex gap-3 mb-4 group">
+    <div className="flex gap-3 mb-6 group">
       {/* Avatar */}
-      <div className={`w-8 h-8 ${meta.color} rounded-lg flex items-center justify-center text-sm flex-shrink-0 mt-0.5`}>
+      <div className={`w-9 h-9 ${meta.color} rounded-xl flex items-center justify-center text-base flex-shrink-0 mt-0.5`}>
         {meta.icon}
       </div>
 
       <div className="flex-1 min-w-0">
         {/* Header */}
-        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="text-xs font-bold text-[#e2e8f0]">{agentName}</span>
           {model && (
             <span className="text-[10px] text-[#475569] bg-[#1e1e2e] px-1.5 py-0.5 rounded font-mono">
@@ -286,8 +286,9 @@ export default function MessageBubble({
         </div>
 
         {/* Contenido */}
-        <div className="text-sm text-[#e2e8f0] leading-relaxed prose prose-invert prose-sm max-w-none
-          prose-code:bg-[#1e1e2e] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-indigo-300
+        <div className="text-base text-[#e2e8f0] leading-relaxed prose prose-invert prose-base max-w-none
+          prose-p:my-2 prose-headings:mt-4 prose-headings:mb-2
+          prose-code:bg-[#1e1e2e] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-indigo-300
           prose-pre:bg-transparent prose-pre:p-0">
           {parts.length > 0 ? (
             parts.map((part, i) =>

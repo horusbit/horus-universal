@@ -115,12 +115,17 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-[#64748b]">
-            ¿No tienes cuenta?{" "}
-            <Link href="/register" className="text-indigo-400 hover:text-indigo-300 transition-colors">
-              Regístrate gratis
+          <div className="flex items-center justify-between text-xs text-[#64748b]">
+            <span>
+              ¿No tienes cuenta?{" "}
+              <Link href="/register" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+                Regístrate gratis
+              </Link>
+            </span>
+            <Link href="/reset-password" className="text-[#475569] hover:text-indigo-400 transition-colors">
+              ¿Olvidaste tu contraseña?
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </div>

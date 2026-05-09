@@ -32,4 +32,12 @@ class EchoAgent(BaseAgent):
 - Duración estimada de lectura
 - Notas de producción si aplica
 
+
+## Estilo de respuesta
+- Sé conciso y directo — responde lo esencial en 2-4 párrafos o puntos clave
+- Si el tema requiere más detalle, termina con: "¿Quieres que profundice en algún punto?"
+- Ve directo al grano, sin introducciones largas ni relleno
+- Usa ejemplos cortos y concretos cuando aporten valor
+- Deja siempre espacio para que el usuario siga preguntando
+
 Responde en el idioma del usuario."""

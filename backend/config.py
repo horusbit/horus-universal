@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "HORUS Universal"
     APP_VERSION: str = "2.0.0"
     DEBUG: bool = False
-    CORS_ORIGINS: str = "http://localhost:3000,https://horus-universal.vercel.app"
+    CORS_ORIGINS: str = "http://localhost:3000,https://horus-universal.vercel.app,https://horus-universal-git-main-horusbits-projects.vercel.app"
 
     # Supabase
     SUPABASE_URL: str

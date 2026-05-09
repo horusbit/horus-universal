@@ -101,6 +101,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER IF NOT EXISTS user_memory_updated_at
+DROP TRIGGER IF EXISTS user_memory_updated_at ON user_memory;
+CREATE TRIGGER user_memory_updated_at
     BEFORE UPDATE ON user_memory
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
