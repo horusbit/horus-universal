@@ -40,12 +40,12 @@ class Settings(BaseSettings):
     LEMONSQUEEZY_WEBHOOK_SECRET: str = ""
 
     # Modelos activos
-    MODEL_PRIMARY: str = "google/gemini-2.0-flash-exp:free"
-    MODEL_FAST: str = "google/gemini-2.0-flash-exp:free"
-    MODEL_BALANCED: str = "google/gemini-2.0-flash-exp:free"
-    MODEL_CRITICAL: str = "google/gemini-2.0-flash-thinking-exp:free"
+    MODEL_PRIMARY: str = "google/gemma-3-4b-it:free"
+    MODEL_FAST: str = "liquid/lfm-2.5-1.2b-instruct:free"
+    MODEL_BALANCED: str = "google/gemma-3-4b-it:free"
+    MODEL_CRITICAL: str = "google/gemma-3-27b-it:free"
     MODEL_DEEP: str = "meta-llama/llama-3.3-70b-instruct:free"
-    MODEL_FALLBACKS: str = "google/gemma-3-12b-it:free,meta-llama/llama-3.1-8b-instruct:free,mistralai/mistral-7b-instruct:free"
+    MODEL_FALLBACKS: str = "liquid/lfm-2.5-1.2b-instruct:free,google/gemma-3-4b-it:free,poolside/laguna-xs.2:free,google/gemma-3-12b-it:free"
 
     @property
     def cors_origins_list(self) -> List[str]:
@@ -59,4 +59,9 @@ class Settings(BaseSettings):
     def voice_enabled(self) -> bool:
         return bool(self.GROQ_API_KEY or self.ELEVENLABS_API_KEY)
 
-    class Confi
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
+
+
+settings = Settings()

@@ -189,4 +189,65 @@ async def chat_stream_endpoint(
 
             if routing_prefix:
                 full_response.append(routing_prefix)
-                yield f"data: {json.dumps({'type': 'chunk', 'content': routing_prefix
+                yield f"data: {json.dumps({'type': 'chunk', 'content': routing_prefix})}\n\n"
+
+            if custom_agent_data:
+                dynamic_agent = DynamicAgent(
+                    name=custom_agent_data["name"],
+                    emoji=custom_agent_data["emoji"],
+                    system_prompt=custom_agent_data["system_prompt"],
+                    model=custom_agent_data["base_model"],
+                )
+                stream_iter = dynamic_agent.stream(
+                    user_message=request.message,
+                    history=history,
+                    extra_system_context=memory_context,
+                )
+            else:
+                agent_class = get_agent(effective_agent)
+                stream_iter = agent_class.stream(
+                    user_message=request.message,
+                    history=history,
+                    extra_system_context=memory_context,
+                )
+
+            async for chunk in stream_iter:
+                full_response.append(chunk)
+                yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+
+            complete_response = "".join(full_response)
+            if complete_response and user:
+                assistant_msg = Message(role="assistant", content=complete_response)
+                await cache.append_message(conversation_id, assistant_msg)
+                await save_message(conversation_id, assistant_msg, effective_agent_label)
+
+            yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id, 'agent': effective_agent_label})}\n\n"
+
+        except Exception as e:
+            logger.error(f"Error en stream: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.get("/usage")
+async def get_usage(user=Depends(get_optional_user)):
+    """Devuelve el uso actual del usuario."""
+    if not user:
+        return {"plan": "anonymous", "used": 0, "limit": None, "allowed": True}
+    user_email = getattr(user, "email", "")
+    return await check_usage_limit(user, user_email)
+
+
+@router.delete("/{conversation_id}")
+async def clear_conversation(
+    conversation_id: str,
+    user=Depends(get_optional_user),
+):
+    """Limpia el historial de una conversación."""
+    await cache.delete_conversation(conversation_id)
+    return {"message": "Conversación eliminada", "conversation_id": conversation_id}

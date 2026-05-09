@@ -321,4 +321,11 @@ export default function ChatInput({ onSend, isLoading, placeholder, inputRef }: 
               bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isLoading ? (
-              <span className="w-3 h-3 bord
+              <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : "↑"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

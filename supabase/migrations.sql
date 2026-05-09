@@ -100,4 +100,40 @@ CREATE TABLE IF NOT EXISTS custom_agents (
     updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE custom_agen
+ALTER TABLE custom_agents ENABLE ROW LEVEL SECURITY;
+
+-- Cada usuario solo ve/gestiona sus propios agentes
+CREATE POLICY "custom_agents_owner" ON custom_agents
+    USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Service role acceso total
+CREATE POLICY "custom_agents_service_all" ON custom_agents
+    USING (true) WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS idx_custom_agents_user_id ON custom_agents(user_id);
+
+DROP TRIGGER IF EXISTS custom_agents_updated_at ON custom_agents;
+CREATE TRIGGER custom_agents_updated_at
+    BEFORE UPDATE ON custom_agents
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ── 5. Verificar que las tablas base existen ──────────
+-- (Las siguientes ya deberían existir; son recordatorio)
+-- conversations(id, user_id, title, agent, updated_at)
+-- messages(id, conversation_id, role, content, agent, model_used, created_at)
+-- user_plans(id, user_id, plan, created_at)
+-- daily_usage(id, user_id, date, count)
+
+-- ── 5. Función para updated_at automático ────────────
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS user_memory_updated_at ON user_memory;
+CREATE TRIGGER user_memory_updated_at
+    BEFORE UPDATE ON user_memory
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
