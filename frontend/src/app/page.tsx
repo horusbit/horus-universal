@@ -12,12 +12,12 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell, { pushNotification } from "@/components/NotificationBell";
 import { useToast } from "@/context/ToastContext";
-import { synthesizeSpeech } from "@/lib/api";
 import {
   streamMessage, AgentType, ChatMessage,
   getConversationMessages, setConversationTitle,
   getUserPlan, createCheckout, UserPlan,
   listCustomAgents, CustomAgent,
+  synthesizeSpeech,
 } from "@/lib/api";
 
 interface Message extends ChatMessage {
@@ -47,6 +47,7 @@ export default function HorusChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const titleSetRef = useRef(false);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const lastVoiceRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
