@@ -522,4 +522,10 @@ function WelcomeScreen({
             className="text-left p-4 bg-[#12121a] border border-[#1e1e2e] rounded-xl hover:border-indigo-500/50 hover:bg-[#12121a]/80 transition-all group"
           >
             <div className="text-sm font-mono text-indigo-400 mb-2">{action.icon}</div>
-    
+                <p className="text-xs text-[#94a3b8] group-hover:text-[#e2e8f0] transition-colors leading-relaxed">{action.text}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
