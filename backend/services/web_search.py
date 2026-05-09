@@ -1,6 +1,7 @@
 """
 Servicio de búsqueda web en tiempo real — HORUS Universal
-Prioridad: Brave Search API > DuckDuckGo library > DuckDuckGo Instant API
+Prioridad: Tavily API > DuckDuckGo library > DuckDuckGo Instant API
+Tavily está diseñado específicamente para agentes de IA.
 """
 import re
 import logging
@@ -10,7 +11,6 @@ from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
-# Patrones que activan búsqueda web automática
 SEARCH_PATTERNS = [
     r'\b(cartelera|cine|pel[ií]cula|horario|caribbean|cinema|movie)\b',
     r'\b(precio|cotizaci[oó]n|d[oó]lar|euro|crypto|bitcoin|ethereum|cuánto cuesta|costo)\b',
@@ -35,18 +35,15 @@ def needs_web_search(message: str) -> bool:
 
 
 async def search_web(query: str, max_results: int = 6) -> List[Dict]:
-    """Búsqueda con Brave API (primario) → DDGS (secundario) → DDG Instant (terciario)."""
-    # 1. Brave Search (más confiable, 2000/mes gratis)
-    results = await _search_brave(query, max_results)
+    """Tavily (primario) → DDGS (secundario) → DDG Instant (terciario)."""
+    results = await _search_tavily(query, max_results)
     if results:
         return results
 
-    # 2. duckduckgo_search library
     results = await _search_ddgs(query, max_results)
     if results:
         return results
 
-    # 3. DuckDuckGo Instant Answer API
     results = await _search_ddg_instant(query)
     if results:
         return results
@@ -55,64 +52,60 @@ async def search_web(query: str, max_results: int = 6) -> List[Dict]:
     return []
 
 
-async def _search_brave(query: str, max_results: int) -> List[Dict]:
-    """Brave Search API — https://api.search.brave.com"""
+async def _search_tavily(query: str, max_results: int) -> List[Dict]:
+    """Tavily Search API — diseñada para agentes IA. 1000/mes gratis."""
     try:
         from config import settings
-        api_key = settings.BRAVE_SEARCH_API_KEY
+        api_key = getattr(settings, 'TAVILY_API_KEY', '') or getattr(settings, 'BRAVE_SEARCH_API_KEY', '')
         if not api_key:
             return []
 
         import aiohttp
-        params = {
-            "q": query,
-            "count": max_results,
-            "search_lang": "es",
-            "country": "DO",       # República Dominicana como país base
-            "safesearch": "off",
-            "freshness": "pw",     # past week — resultados frescos
+        payload = {
+            "api_key": api_key,
+            "query": query,
+            "search_depth": "basic",
+            "include_answer": True,
+            "include_raw_content": False,
+            "max_results": max_results,
+            "include_domains": [],
+            "exclude_domains": [],
         }
-        headers = {
-            "Accept": "application/json",
-            "Accept-Encoding": "gzip",
-            "X-Subscription-Token": api_key,
-        }
-        url = "https://api.search.brave.com/res/v1/web/search"
-
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url, params=params, headers=headers,
+            async with session.post(
+                "https://api.tavily.com/search",
+                json=payload,
                 timeout=aiohttp.ClientTimeout(total=10)
             ) as resp:
                 if resp.status != 200:
-                    logger.warning(f"[Brave] HTTP {resp.status}")
+                    logger.warning(f"[Tavily] HTTP {resp.status}")
                     return []
                 data = await resp.json()
 
         results = []
-        for item in data.get("web", {}).get("results", [])[:max_results]:
+        # Respuesta directa de Tavily (muy útil)
+        if data.get("answer"):
             results.append({
-                "title": item.get("title", ""),
-                "body": item.get("description", ""),
-                "href": item.get("url", ""),
-                "source": "brave",
+                "title": f"Respuesta directa: {query[:60]}",
+                "body": data["answer"],
+                "href": "",
+                "source": "tavily_answer",
             })
-
-        # También incluir noticias si hay
-        for item in data.get("news", {}).get("results", [])[:2]:
+        # Resultados web
+        for item in data.get("results", [])[:max_results]:
             results.append({
                 "title": item.get("title", ""),
-                "body": item.get("description", ""),
+                "body": item.get("content", "")[:500],
                 "href": item.get("url", ""),
-                "source": "brave_news",
+                "source": "tavily",
             })
 
         if results:
-            logger.info(f"[Brave] '{query[:50]}' → {len(results)} resultados")
+            logger.info(f"[Tavily] '{query[:50]}' → {len(results)} resultados")
         return results
 
     except Exception as e:
-        logger.warning(f"[Brave] Error: {e}")
+        logger.warning(f"[Tavily] Error: {e}")
         return []
 
 
@@ -174,7 +167,6 @@ async def _search_ddg_instant(query: str) -> List[Dict]:
 
 
 def format_search_context(results: List[Dict], query: str) -> str:
-    """Formatea resultados como contexto para el LLM."""
     if not results:
         return ""
     lines = [
@@ -190,5 +182,5 @@ def format_search_context(results: List[Dict], query: str) -> str:
             lines.append(body)
             if href:
                 lines.append(f"🔗 {href}\n")
-    lines.append("\n[Responde usando esta información actual. Indica que consultaste internet. Si los datos son insuficientes, dilo.]")
+    lines.append("\n[Responde usando esta información actual. Indica que consultaste internet.]")
     return "\n".join(lines)
