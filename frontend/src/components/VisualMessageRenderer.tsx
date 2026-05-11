@@ -1,3 +1,31 @@
+
+
+function looksLikeVisualPrompt(text: string) {
+  if (!text) return false;
+
+  const t = text.toLowerCase();
+
+  const keywords = [
+    "logo",
+    "branding",
+    "mockup",
+    "render",
+    "vector style",
+    "high resolution",
+    "corporate branding",
+    "flat vector",
+    "centered composition",
+    "professional minimalist",
+    "8k quality",
+    "modern sans-serif",
+    "white background"
+  ];
+
+  const matches = keywords.filter(k => t.includes(k)).length;
+
+  return matches >= 3;
+}
+
 "use client";
 
 
@@ -55,8 +83,25 @@ function cleanText(text: string) {
 }
 
 export default function VisualMessageRenderer({ content }: { content: string }) {
-  const images = extractImages(content || "");
-  const text = cleanText(content || "");
+  let images = extractImages(content || "");
+  let text = cleanText(content || "");
+
+  // AUTO-CONVERT RAW VISUAL PROMPTS INTO IMAGES
+  if (images.length === 0 && looksLikeVisualPrompt(text)) {
+
+    const cleanedPrompt = text
+      .replace("↗ abrir", "")
+      .trim();
+
+    const url = buildPollinationsUrl(cleanedPrompt);
+
+    images = [
+      {
+        url,
+        label: "Imagen generada"
+      }
+    ];
+  }
 
   return (
     <div className="space-y-4">
