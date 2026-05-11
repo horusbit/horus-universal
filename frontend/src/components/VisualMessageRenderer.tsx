@@ -25,12 +25,21 @@ function extractImages(text: string) {
     }
   }
 
-  const horusRegex = /\[HORUS_IMAGE\][\s\S]*?prompt:\s*([^\n\r]+)/gi;
+  const horusRegex = /\[HORUS_IMAGE\]\s*prompt:\s*(.*?)\s*model:/gis;
+
   while ((match = horusRegex.exec(text)) !== null) {
-    const prompt = match![1].trim();
+
+    const prompt = match![1]?.trim();
+
+    if (!prompt) continue;
+
     const url = buildPollinationsUrl(prompt);
+
     if (!images.find((img) => img.url === url)) {
-      images.push({ url, label: "Imagen HORUS" });
+      images.push({
+        url,
+        label: "Imagen HORUS"
+      });
     }
   }
 
@@ -41,7 +50,7 @@ function cleanText(text: string) {
   return text
     .replace(/!\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/g, "")
     .replace(/https:\/\/image\.pollinations\.ai\/prompt\/[^\s)]+/g, "")
-    .replace(/\[HORUS_IMAGE\][\s\S]*?prompt:\s*([^\n\r]+)/gi, "")
+    .replace(/\[HORUS_IMAGE\][\s\S]*?\[HORUS_IMAGE\]/gis, "")
     .trim();
 }
 
