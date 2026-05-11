@@ -1,3 +1,4 @@
+from backend.routers import visual
 """
 HORUS Universal - Backend Principal
 FastAPI + Supabase + OpenRouter + Upstash Redis
@@ -103,3 +104,5 @@ async def server_error_handler(request, exc):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG, log_level="info")
+
+app.include_router(visual.router)
