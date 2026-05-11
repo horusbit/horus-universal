@@ -1,5 +1,5 @@
-import VisualMessageRenderer from "@/components/VisualMessageRenderer";
 "use client";
+import VisualMessageRenderer from "@/components/VisualMessageRenderer";
 
 import { useState, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
