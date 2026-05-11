@@ -15,19 +15,19 @@ function extractImages(text: string) {
   let match: RegExpExecArray | null;
 
   while ((match = markdownRegex.exec(text)) !== null) {
-    images.push({ url: match[1], label: "Imagen generada" });
+    images.push({ url: match![1], label: "Imagen generada" });
   }
 
   const urlRegex = /(https:\/\/image\.pollinations\.ai\/prompt\/[^\s)]+)/g;
   while ((match = urlRegex.exec(text)) !== null) {
-    if (!images.find((img) => img.url === match[1])) {
-      images.push({ url: match[1], label: "Imagen generada" });
+    if (!images.find((img) => img.url === match![1])) {
+      images.push({ url: match![1], label: "Imagen generada" });
     }
   }
 
   const horusRegex = /\[HORUS_IMAGE\][\s\S]*?prompt:\s*([^\n\r]+)/gi;
   while ((match = horusRegex.exec(text)) !== null) {
-    const prompt = match[1].trim();
+    const prompt = match![1].trim();
     const url = buildPollinationsUrl(prompt);
     if (!images.find((img) => img.url === url)) {
       images.push({ url, label: "Imagen HORUS" });
