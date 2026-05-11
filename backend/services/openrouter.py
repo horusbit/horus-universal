@@ -53,6 +53,26 @@ def _build_models_list(primary: Optional[str] = None) -> List[str]:
     return models
 
 
+
+def _normalize_messages(messages):
+    normalized = []
+
+    for msg in messages:
+        if isinstance(msg, dict):
+            normalized.append(msg)
+        elif hasattr(msg, "model_dump"):
+            normalized.append(msg.model_dump())
+        elif hasattr(msg, "dict"):
+            normalized.append(msg.dict())
+        else:
+            normalized.append({
+                "role": getattr(msg, "role", "user"),
+                "content": getattr(msg, "content", str(msg))
+            })
+
+    return normalized
+
+
 def _build_payload(models_list, messages, temperature, max_tokens, stream=False):
     # OpenRouter fix: use a single model instead of "models" array
     # because OpenRouter rejects models arrays with more than 3 items.
@@ -60,7 +80,7 @@ def _build_payload(models_list, messages, temperature, max_tokens, stream=False)
 
     payload = {
         "model": selected_model,
-        "messages": messages,
+        "messages": _normalize_messages(messages),
         "temperature": temperature,
         "max_tokens": max_tokens,
         "stream": stream,
@@ -203,5 +223,6 @@ def select_model(tier: Optional[ModelTier] = None, task_complexity: str = "mediu
         "critical": ModelTier.PAID_CRITICAL,
     }
     return MODEL_MAP.get(complexity_map.get(task_complexity, ModelTier.FREE_BALANCED), settings.MODEL_PRIMARY)
+
 
 
