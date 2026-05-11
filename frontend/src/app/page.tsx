@@ -1,6 +1,5 @@
 "use client";
 
-import VisualMessageRenderer from "@/components/VisualMessageRenderer";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -434,7 +433,7 @@ export default function HorusChat() {
                 <MessageBubble
                   key={msg.id}
                   role={msg.role as "user" | "assistant"}
-                  content=<VisualMessageRenderer content={msg.content} />
+                  content={msg.content}
                   agent={msg.agent}
                   model={msg.model}
                   isStreaming={isLoading && msg.id === messages[messages.length - 1]?.id && msg.role === "assistant"}
