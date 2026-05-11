@@ -1,3 +1,4 @@
+import VisualMessageRenderer from "@/components/VisualMessageRenderer";
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -108,7 +109,7 @@ export default function HorusChat() {
     if (!messages.length) return;
     const lines = messages.map(m => {
       const role = m.role === "user" ? "Tu" : `${(m.agent || "ATLAS").toUpperCase()}`;
-      return `## ${role}\n\n${m.content}`;
+      return `## ${role}\n\n$<VisualMessageRenderer content={m.content} />`;
     });
     const md = `# Conversacion HORUS Universal\n_Exportado: ${new Date().toLocaleString("es-ES")}_\n\n---\n\n${lines.join("\n\n---\n\n")}`;
     const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
@@ -432,7 +433,7 @@ export default function HorusChat() {
                 <MessageBubble
                   key={msg.id}
                   role={msg.role as "user" | "assistant"}
-                  content={msg.content}
+                  content=<VisualMessageRenderer content={msg.content} />
                   agent={msg.agent}
                   model={msg.model}
                   isStreaming={isLoading && msg.id === messages[messages.length - 1]?.id && msg.role === "assistant"}
