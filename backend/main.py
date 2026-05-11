@@ -1,4 +1,3 @@
-from routers import visual
 """
 HORUS Universal - Backend Principal
 FastAPI + Supabase + OpenRouter + Upstash Redis
@@ -13,6 +12,7 @@ from routers.billing import router as billing_router
 from routers.files import router as files_router
 from routers.admin import router as admin_router
 from routers.images import router as images_router
+from routers.visual import router as visual_router
 from routers.telegram import router as telegram_router
 from routers.share import router as share_router
 from routers.custom_agents import router as custom_agents_router
@@ -105,4 +105,4 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG, log_level="info")
 
-app.include_router(visual.router)
+
