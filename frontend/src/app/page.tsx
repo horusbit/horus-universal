@@ -1,5 +1,6 @@
-import VisualMessageRenderer from "@/components/VisualMessageRenderer";
 "use client";
+
+import VisualMessageRenderer from "@/components/VisualMessageRenderer";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
