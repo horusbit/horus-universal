@@ -27,7 +27,7 @@ NEVER say:
 "I cannot generate images."
 """
 
-﻿"""
+"""
 OpenRouter service â€” native models array fallback.
 Una sola llamada; OpenRouter maneja el failover internamente.
 NOTA: No usar "route": "fallback" â€” ese campo no existe y causa HTTP 400.
