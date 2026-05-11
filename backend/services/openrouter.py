@@ -53,21 +53,19 @@ def _build_models_list(primary: Optional[str] = None) -> List[str]:
     return models
 
 
-def _build_payload(models_list: List[str], messages: List[Message],
-                   temperature: float, max_tokens: int, stream: bool = False) -> dict:
-    """
-    Construye el payload correcto para OpenRouter.
-    - "models" array activa el fallback nativo automaticamente.
-    - NO incluir "route": "fallback" â€” ese campo causa HTTP 400.
-    """
-    payload: dict = {
-        "models": models_list,
-        "messages": [{"role": m.role, "content": m.content} for m in messages],
+def _build_payload(models_list, messages, temperature, max_tokens, stream=False):
+    # OpenRouter fix: use a single model instead of "models" array
+    # because OpenRouter rejects models arrays with more than 3 items.
+    selected_model = models_list[0] if isinstance(models_list, list) and len(models_list) > 0 else "openrouter/free"
+
+    payload = {
+        "model": selected_model,
+        "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
+        "stream": stream,
     }
-    if stream:
-        payload["stream"] = True
+
     return payload
 
 
@@ -205,4 +203,5 @@ def select_model(tier: Optional[ModelTier] = None, task_complexity: str = "mediu
         "critical": ModelTier.PAID_CRITICAL,
     }
     return MODEL_MAP.get(complexity_map.get(task_complexity, ModelTier.FREE_BALANCED), settings.MODEL_PRIMARY)
+
 
