@@ -12,7 +12,7 @@ function extractImages(text: string) {
   const images: { url: string; label: string }[] = [];
 
   const markdownRegex = /!\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/g;
-  let match;
+  let match: RegExpExecArray | null;
 
   while ((match = markdownRegex.exec(text)) !== null) {
     images.push({ url: match[1], label: "Imagen generada" });
