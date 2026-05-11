@@ -60,11 +60,11 @@ class Settings(BaseSettings):
     # Modelos activos — actualizados mayo 2026
     # openrouter/free = auto-router que elige el mejor modelo free disponible
     MODEL_PRIMARY: str = "openrouter/free"
-    MODEL_FAST: str = "meta-llama/llama-3.3-70b-instruct:free"
+    MODEL_FAST: str = "openrouter/free"
     MODEL_BALANCED: str = "openrouter/free"
     MODEL_CRITICAL: str = "openai/gpt-oss-120b:free"
     MODEL_DEEP: str = "nvidia/nemotron-3-super-120b-a12b:free"
-    MODEL_FALLBACKS: str = "meta-llama/llama-3.3-70b-instruct:free,openai/gpt-oss-120b:free,nvidia/nemotron-3-super-120b-a12b:free,qwen/qwen3-next-80b-a3b-instruct:free,google/gemma-4-31b-it:free,nousresearch/hermes-3-llama-3.1-405b:free,nvidia/nemotron-3-nano-30b-a3b:free,openai/gpt-oss-20b:free,meta-llama/llama-3.2-3b-instruct:free"
+    MODEL_FALLBACKS: str = "openrouter/free,openai/gpt-oss-120b:free,nvidia/nemotron-3-super-120b-a12b:free,qwen/qwen3-next-80b-a3b-instruct:free,google/gemma-4-31b-it:free,nousresearch/hermes-3-llama-3.1-405b:free,nvidia/nemotron-3-nano-30b-a3b:free,openai/gpt-oss-20b:free,meta-llama/llama-3.2-3b-instruct:free"
 
     @property
     def cors_origins_list(self) -> List[str]:

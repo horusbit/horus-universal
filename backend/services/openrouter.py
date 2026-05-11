@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 FALLBACK_MODELS = [
     "openrouter/free",
     "google/gemma-3-27b-it:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
 ]
 
 MODEL_MAP = {
@@ -122,7 +122,7 @@ def _build_payload(models_list, messages, temperature, max_tokens, stream=False)
         "model": selected_model,
         "messages": _normalize_messages(messages),
         "temperature": 0.7,
-        "max_tokens": min(max_tokens or 900, 900),
+        "max_tokens": min(max_tokens or 700, 700),
         "stream": stream,
     }
 
