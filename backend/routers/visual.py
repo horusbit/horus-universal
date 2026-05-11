@@ -1,7 +1,7 @@
 
 from fastapi import APIRouter
 from pydantic import BaseModel
-from backend.services.visual_service import generate_image_url, visual_response
+from services.visual_service import generate_image_url, visual_response
 
 router = APIRouter(prefix="/api/v1/visual", tags=["visual"])
 

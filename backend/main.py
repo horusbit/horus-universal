@@ -1,4 +1,4 @@
-from backend.routers import visual
+from routers import visual
 """
 HORUS Universal - Backend Principal
 FastAPI + Supabase + OpenRouter + Upstash Redis
