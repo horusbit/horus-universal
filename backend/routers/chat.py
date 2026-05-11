@@ -1,4 +1,41 @@
 
+VISUAL_KEYWORDS_HARD = [
+    "logo", "imagen", "image", "render", "mockup", "branding",
+    "poster", "flyer", "ui", "web", "app", "arquitectura",
+    "casa", "plano", "visual", "design", "diseño", "diseno",
+    "foto", "ilustracion", "ilustración", "arte"
+]
+
+def _horus_is_visual(text: str) -> bool:
+    if not text:
+        return False
+    text = text.lower()
+    return any(k in text for k in VISUAL_KEYWORDS_HARD)
+
+def _horus_visual_markdown(prompt: str) -> str:
+    enhanced = (
+        f"{prompt}, masterpiece quality, premium professional design, "
+        "clean composition, sharp details, elegant layout, high-end commercial quality, "
+        "balanced symmetry, no watermark, no blur"
+    )
+
+    encoded = quote(enhanced)
+    seed = int(hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:8], 16)
+
+    url = (
+        f"https://image.pollinations.ai/prompt/{encoded}"
+        f"?width=1024&height=1024&seed={seed}&model=flux&enhance=true&nologo=true"
+    )
+
+    return f"""# Imagen generada
+
+![Imagen generada]({url})
+
+Abrir imagen:
+{url}
+"""
+
+
 
 from urllib.parse import quote
 import hashlib
@@ -182,6 +219,14 @@ async def chat(
     custom_agent_data = None
     if UUID_RE.match(agent_id_str):
         custom_agent_data = await get_custom_agent_by_id(agent_id_str)
+
+    
+    user_text = getattr(request, "message", None) or getattr(request, "content", None) or getattr(request, "prompt", None) or ""
+    if _horus_is_visual(user_text):
+        answer = _horus_visual_markdown(user_text)
+        async def visual_event_generator():
+            yield f"data: {answer}\\n\\n"
+        return StreamingResponse(visual_event_generator(), media_type="text/event-stream")
 
     try:
         if custom_agent_data:
