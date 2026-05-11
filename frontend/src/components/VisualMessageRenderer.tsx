@@ -25,7 +25,7 @@ function extractImages(text: string) {
     }
   }
 
-  const horusRegex = /\[HORUS_IMAGE\]\s*prompt:\s*(.*?)\s*model:/gis;
+  const horusRegex = /\[HORUS_IMAGE\]\s*prompt:\s*([\s\S]*?)\s*model:/gi;
 
   while ((match = horusRegex.exec(text)) !== null) {
 
@@ -50,7 +50,7 @@ function cleanText(text: string) {
   return text
     .replace(/!\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/g, "")
     .replace(/https:\/\/image\.pollinations\.ai\/prompt\/[^\s)]+/g, "")
-    .replace(/\[HORUS_IMAGE\][\s\S]*?\[HORUS_IMAGE\]/gis, "")
+    .replace(/\[HORUS_IMAGE\][\s\S]*?\[HORUS_IMAGE\]/gi, "")
     .trim();
 }
 
