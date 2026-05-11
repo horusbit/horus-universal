@@ -3,12 +3,14 @@ Router de Teams — HORUS Universal
 Workspaces de equipo: crear org, invitar miembros, historial compartido, roles.
 """
 import uuid
+import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from auth.supabase_auth import get_optional_user
 from config import settings
+from services.email_service import send_team_invitation
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/teams", tags=["teams"])
@@ -21,11 +23,11 @@ def _client():
 
 def _require_user(user):
     if not user:
-        raise HTTPException(401, "Autenticación requerida.")
+        raise HTTPException(401, "Autenticacion requerida.")
     return user
 
 
-# ── Schemas ───────────────────────────────────────────────────────────────────
+# Schemas
 
 class CreateTeamRequest(BaseModel):
     name: str
@@ -40,7 +42,7 @@ class UpdateRoleRequest(BaseModel):
     role: str
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
+# Endpoints
 
 @router.post("/")
 async def create_team(body: CreateTeamRequest, user=Depends(get_optional_user)):
@@ -50,7 +52,6 @@ async def create_team(body: CreateTeamRequest, user=Depends(get_optional_user)):
     team_id = str(uuid.uuid4())
 
     try:
-        # Create team
         client.table("teams").insert({
             "id": team_id,
             "name": body.name,
@@ -59,7 +60,6 @@ async def create_team(body: CreateTeamRequest, user=Depends(get_optional_user)):
             "plan": "team",
         }).execute()
 
-        # Add creator as admin
         client.table("team_members").insert({
             "team_id": team_id,
             "user_id": user.id,
@@ -98,7 +98,6 @@ async def get_team(team_id: str, user=Depends(get_optional_user)):
     """Obtiene detalles de un team."""
     _require_user(user)
     client = _client()
-    # Verify membership
     mem = client.table("team_members").select("role").eq("team_id", team_id).eq("user_id", user.id).execute()
     if not mem.data:
         raise HTTPException(403, "No eres miembro de este equipo.")
@@ -115,7 +114,7 @@ async def get_team(team_id: str, user=Depends(get_optional_user)):
 
 @router.post("/{team_id}/invite")
 async def invite_member(team_id: str, body: InviteMemberRequest, user=Depends(get_optional_user)):
-    """Invita a un miembro al equipo (solo admins)."""
+    """Invita a un miembro al equipo (solo admins). Envia email de notificacion."""
     _require_user(user)
     client = _client()
 
@@ -142,6 +141,22 @@ async def invite_member(team_id: str, body: InviteMemberRequest, user=Depends(ge
         "role": body.role,
         "email": body.email,
     }).execute()
+
+    # Send invitation email (fire-and-forget)
+    try:
+        team_data = client.table("teams").select("name").eq("id", team_id).single().execute()
+        team_name = (team_data.data or {}).get("name", "tu equipo")
+        inviter_name = getattr(user, "email", "Un miembro de HORUS")
+        asyncio.create_task(send_team_invitation(
+            to_email=body.email,
+            inviter_name=inviter_name,
+            team_name=team_name,
+            team_id=team_id,
+            role=body.role,
+        ))
+        logger.info(f"[Teams] Email invitation queued for {body.email}")
+    except Exception as email_err:
+        logger.warning(f"[Teams] Email notification skipped: {email_err}")
 
     return {"message": f"{body.email} añadido como {body.role}.", "team_id": team_id}
 

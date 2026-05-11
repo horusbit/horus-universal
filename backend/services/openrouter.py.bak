@@ -1,7 +1,7 @@
-﻿"""
-OpenRouter service â€” native models array fallback.
+"""
+OpenRouter service — native models array fallback.
 Una sola llamada; OpenRouter maneja el failover internamente.
-NOTA: No usar "route": "fallback" â€” ese campo no existe y causa HTTP 400.
+NOTA: No usar "route": "fallback" — ese campo no existe y causa HTTP 400.
       Solo "models" array es suficiente para fallback nativo.
 Modelos actualizados a mayo 2026.
 """
@@ -19,7 +19,16 @@ logger = logging.getLogger(__name__)
 FALLBACK_MODELS = [
     "openrouter/free",
     "meta-llama/llama-3.3-70b-instruct:free",
+    "openai/gpt-oss-120b:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
     "qwen/qwen3-next-80b-a3b-instruct:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "openai/gpt-oss-20b:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "nvidia/nemotron-nano-9b-v2:free",
 ]
 
 MODEL_MAP = {
@@ -58,7 +67,7 @@ def _build_payload(models_list: List[str], messages: List[Message],
     """
     Construye el payload correcto para OpenRouter.
     - "models" array activa el fallback nativo automaticamente.
-    - NO incluir "route": "fallback" â€” ese campo causa HTTP 400.
+    - NO incluir "route": "fallback" — ese campo causa HTTP 400.
     """
     payload: dict = {
         "models": models_list,
@@ -80,7 +89,7 @@ async def chat_completion(
 ) -> dict:
     """Completion con fallback nativo OpenRouter."""
     primary = model or MODEL_MAP.get(tier, settings.MODEL_PRIMARY)
-    models_list = _build_models_list(primary)[:3]
+    models_list = _build_models_list(primary)
     payload = _build_payload(models_list, messages, temperature, max_tokens)
 
     logger.info(f"[OpenRouter] Completion -> {models_list[0]} (+{len(models_list)-1} fallbacks)")
@@ -127,7 +136,7 @@ async def chat_stream(
 ) -> AsyncGenerator[str, None]:
     """Streaming con fallback nativo OpenRouter."""
     primary = model or MODEL_MAP.get(tier, settings.MODEL_PRIMARY)
-    models_list = _build_models_list(primary)[:3]
+    models_list = _build_models_list(primary)
     payload = _build_payload(models_list, messages, temperature, max_tokens, stream=True)
 
     logger.info(f"[OpenRouter] Stream -> {models_list[0]} (+{len(models_list)-1} fallbacks)")
@@ -205,4 +214,3 @@ def select_model(tier: Optional[ModelTier] = None, task_complexity: str = "mediu
         "critical": ModelTier.PAID_CRITICAL,
     }
     return MODEL_MAP.get(complexity_map.get(task_complexity, ModelTier.FREE_BALANCED), settings.MODEL_PRIMARY)
-

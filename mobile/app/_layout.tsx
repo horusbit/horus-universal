@@ -19,6 +19,14 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="chat" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="conversations"
+            options={{ title: "Conversaciones", headerShown: true }}
+          />
+          <Stack.Screen
+            name="agents"
+            options={{ title: "Agentes", headerShown: true }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

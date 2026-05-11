@@ -128,4 +128,23 @@ async def share_conversation(
 ):
     """Genera un enlace público para compartir la conversación."""
     if not user:
-        raise HTTPException
+        raise HTTPException(status_code=401, detail="Autenticación requerida.")
+    token = await create_share_token(conversation_id, user.id)
+    if not token:
+        raise HTTPException(status_code=500, detail="No se pudo crear el enlace.")
+    return {
+        "token": token,
+        "share_url": f"/share/{token}",
+    }
+
+
+@router.delete("/{conversation_id}")
+async def remove_conversation(
+    conversation_id: str,
+    user=Depends(get_optional_user),
+):
+    """Elimina conversación de Redis y Supabase."""
+    await cache.delete_conversation(conversation_id)
+    if user:
+        await delete_conversation(conversation_id, user.id)
+    return {"message": "Conversación eliminada", "conversation_id": conversation_id}
