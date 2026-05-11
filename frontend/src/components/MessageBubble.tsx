@@ -237,7 +237,13 @@ export default function MessageBubble({
       <div className="flex justify-end mb-6 group">
         <div className="max-w-[80%] sm:max-w-[75%]">
           <div className="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-base leading-relaxed">
-            <VisualMessageRenderer content=<VisualMessageRenderer content={content} imageUrl={(message as any)?.image_url} visual={(message as any)?.visual} /> />
+            
+<VisualMessageRenderer
+  content={content}
+  imageUrl={(message as any)?.image_url}
+  visual={(message as any)?.visual}
+/>
+
           </div>
           <div className="flex items-center justify-end gap-2 mt-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             {timestamp && <span className="text-[10px] text-[#475569]">{timestamp}</span>}
