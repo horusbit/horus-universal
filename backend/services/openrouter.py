@@ -1,3 +1,32 @@
+
+
+GLOBAL_VISUAL_RULE = """
+If the user asks for:
+- logos
+- architecture
+- renders
+- mockups
+- visual concepts
+- engineering visuals
+- branding
+- posters
+- flyers
+- UI
+- app concepts
+- images
+
+Then:
+- ALWAYS generate a Pollinations image URL.
+- ALWAYS show it using markdown image syntax.
+
+Example:
+
+![Generated Image](https://image.pollinations.ai/prompt/modern%20logo?width=1024&height=1024&enhance=true&nologo=true)
+
+NEVER say:
+"I cannot generate images."
+"""
+
 ﻿"""
 OpenRouter service â€” native models array fallback.
 Una sola llamada; OpenRouter maneja el failover internamente.

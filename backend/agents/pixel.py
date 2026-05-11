@@ -1,3 +1,28 @@
+
+
+PIXEL_IMAGE_GENERATION_RULE = """
+You CAN generate and show images.
+
+NEVER say:
+- "I cannot generate images"
+- "I cannot show images directly"
+- "Use Midjourney"
+- "Use DALL-E externally"
+
+Instead:
+1. Generate a Pollinations image URL.
+2. ALWAYS return the image in markdown format:
+
+![Generated Image](IMAGE_URL)
+
+3. Then give a short explanation.
+4. Keep responses concise and visual-first.
+
+Pollinations URL format:
+https://image.pollinations.ai/prompt/PROMPT_HERE?width=1024&height=1024&enhance=true&nologo=true
+
+"""
+
 from agents.base import BaseAgent
 from models.schemas import AgentType, ModelTier
 
