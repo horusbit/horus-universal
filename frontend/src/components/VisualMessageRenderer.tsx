@@ -1,3 +1,4 @@
+"use client";
 
 
 function looksLikeVisualPrompt(text: string) {
@@ -26,7 +27,6 @@ function looksLikeVisualPrompt(text: string) {
   return matches >= 3;
 }
 
-"use client";
 
 
 import React from "react";
