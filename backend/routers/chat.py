@@ -165,6 +165,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from models.schemas import ChatRequest, ChatResponse, Message, AgentType
 from agents import get_agent
+from services.visual_service import is_visual_request, build_image_url
 from services.visual_service import is_visual_request, make_image_markdown
 from agents.dynamic import DynamicAgent
 from services.redis_cache import cache
