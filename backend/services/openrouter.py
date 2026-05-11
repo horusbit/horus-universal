@@ -1,5 +1,52 @@
 
 
+from urllib.parse import quote
+
+
+VISUAL_KEYWORDS = [
+    "logo",
+    "image",
+    "imagen",
+    "visual",
+    "branding",
+    "architecture",
+    "arquitectura",
+    "render",
+    "mockup",
+    "ui",
+    "poster",
+    "flyer",
+    "design",
+    "diseno",
+    "diseño",
+    "house",
+    "casa",
+]
+
+
+def _is_visual_request(text: str) -> bool:
+    if not text:
+        return False
+
+    text = text.lower()
+
+    return any(k in text for k in VISUAL_KEYWORDS)
+
+
+def _build_pollinations_markdown(prompt: str) -> str:
+    encoded = quote(prompt)
+
+    url = f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&enhance=true&nologo=true"
+
+    return f"""
+![Generated Image]({url})
+
+Visual generated for:
+{prompt}
+"""
+
+
+
 GLOBAL_VISUAL_RULE = """
 If the user asks for:
 - logos
