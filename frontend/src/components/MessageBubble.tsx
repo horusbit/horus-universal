@@ -240,8 +240,6 @@ export default function MessageBubble({
             
 <VisualMessageRenderer
   content={content}
-  imageUrl={(message as any)?.image_url}
-  visual={(message as any)?.visual}
 />
 
           </div>
